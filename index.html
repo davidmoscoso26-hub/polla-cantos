@@ -476,10 +476,20 @@ const SB_KEY='sb_publishable_tMBqxtOXJ9D4cRT5pFO0gQ_8RN2FVUH';
 const ADMIN_PIN='9999';
 
 async function sb(table,opts={}){
-  try{const r=await fetch(`${SB_URL}/rest/v1/${table}`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},...opts});if(!r.ok)return null;const t=await r.text();return t?JSON.parse(t):[];}catch(e){return null;}
+  try{
+    const xh=opts.headers||{};
+    const r=await fetch(`${SB_URL}/rest/v1/${table}`,{
+      method:opts.method||'GET',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json',...xh},
+      ...(opts.body?{body:opts.body}:{})
+    });
+    if(!r.ok){const e=await r.text();console.log('SB error',r.status,e);return null;}
+    const t=await r.text();return t?JSON.parse(t):[];
+  }catch(e){console.log('SB err',e);return null;}
 }
 async function sbGet(q){return sb(q);}
 async function sbUpsert(table,data){return sb(table,{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify(data)});}
+
 
 let PLAYERS=[
   {id:'david', name:'David',  color:'#3b82f6',emoji:'🧑', pin:'1997'},

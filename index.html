@@ -471,12 +471,12 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
     </div>
     <div class="ptbl" style="margin-top:10px;">
       <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Puntos del bracket</div>
-      <div class="prow"><span class="plbl">Round of 32</span><span class="pval">2 pts</span></div>
-      <div class="prow"><span class="plbl">Octavos de final</span><span class="pval">3 pts</span></div>
-      <div class="prow"><span class="plbl">Cuartos de final</span><span class="pval">5 pts</span></div>
-      <div class="prow"><span class="plbl">Semifinales</span><span class="pval">7 pts</span></div>
-      <div class="prow"><span class="plbl">Finalista</span><span class="pval">9 pts</span></div>
-      <div class="prow"><span class="plbl">🏆 Campeón</span><span class="pval">12 pts</span></div>
+      <div class="prow"><span class="plbl">Round of 32</span><span class="pval">3 pts</span></div>
+      <div class="prow"><span class="plbl">Octavos de final</span><span class="pval">5 pts</span></div>
+      <div class="prow"><span class="plbl">Cuartos de final</span><span class="pval">7 pts</span></div>
+      <div class="prow"><span class="plbl">Semifinales</span><span class="pval">10 pts</span></div>
+      <div class="prow"><span class="plbl">Finalista</span><span class="pval">12 pts</span></div>
+      <div class="prow"><span class="plbl">🏆 Campeón</span><span class="pval">15 pts</span></div>
     </div>
   </div>
 
@@ -912,7 +912,8 @@ function initApp(){
   }
   document.getElementById('surl').textContent=window.location.href;
   document.getElementById('player-count').textContent=PLAYERS.length;
-  renderNextBanner();renderRanking();updateCountdown();
+  renderNextBanner();updateCountdown();
+  setTimeout(()=>renderRanking(),100);
   setInterval(updateCountdown,60000);
   setInterval(async()=>{await loadData();renderRanking();renderNextBanner();if(document.getElementById('section-partidos').classList.contains('on'))renderMatches();if(document.getElementById('section-mundial').classList.contains('on'))renderMundial();},300000); // 5 min
 }
@@ -1096,7 +1097,7 @@ window.showHelp=function(){
       <b style="color:#fff;">Fase de grupos</b><br>
       Equipo clasificado → <b style="color:var(--g);">3 pts</b> · Posición correcta → <b style="color:var(--g);">+1 pt</b><br><br>
       <b style="color:#fff;">Bracket eliminatorio</b><br>
-      R32→2 · 8vos→3 · 4tos→5 · Semis→7 · Finalista→9 · 🏆→12 pts<br><br>
+      R32→3 · 8vos→5 · 4tos→7 · Semis→10 · Finalista→12 · 🏆→15 pts<br><br>
       <b style="color:#fff;">Goleador del torneo → +10 pts</b><br><br>
       <span style="color:#ef4444;">🔒 Los picks cierran el 11 jun 13:00 EC</span>
     </div>

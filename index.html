@@ -407,7 +407,6 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
     <button class="nbtn" onclick="nav('partidos')" id="nav-partidos"><span class="ni">⚽</span>Matches</button>
     <button class="nbtn" onclick="nav('picks')" id="nav-picks"><span class="ni">🎯</span>Picks</button>
     <button class="nbtn" onclick="nav('mundial')" id="nav-mundial"><span class="ni">🌍</span>Mundial</button>
-    <button class="nbtn" onclick="nav('stats')" id="nav-stats"><span class="ni">📊</span>Stats</button>
     <button class="nbtn" onclick="nav('bracket')" id="nav-bracket"><span class="ni">🏟️</span>Bracket</button>
     <button class="nbtn" onclick="nav('admin')" id="nav-admin"><span class="ni">⚙️</span>Admin</button>
   </div>
@@ -462,18 +461,12 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
     </div>
   </div>
 
-  <!-- STATS -->
-  <div class="section" id="section-stats">
-    <div class="stitle">Estadísticas</div>
-    <div id="stats-wrap"><div class="loading"><div class="spinner"></div><p style="font-size:13px;color:var(--muted);">Calculando...</p></div></div>
-  </div>
-
   <!-- BRACKET -->
   <div class="section" id="section-bracket">
     <div class="bloc">
       <div style="font-size:52px;margin-bottom:12px;">🏟️</div>
       <h3 style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;margin-bottom:8px;">Bracket eliminatorio</h3>
-      <p style="font-size:13px;color:var(--muted);line-height:1.7;">Predice quién avanza desde Round of 32 hasta el campeón.</p>
+      <p style="font-size:13px;color:var(--muted);line-height:1.7;">Se habilita al terminar la fase de grupos (27 jun).<br>Predices quién avanza desde Round of 32 hasta el campeón.</p>
       <div class="ctchip" id="ctchip">⏳ Calculando...</div>
     </div>
     <div class="ptbl" style="margin-top:10px;">
@@ -489,9 +482,17 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
 
   <!-- MUNDIAL -->
   <div class="section" id="section-mundial">
-    <div class="stitle">Tabla del Mundial</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Se actualiza cuando el admin carga los resultados.</div>
-    <div class="mundial-grid" id="mundial-grid"><div class="loading"><div class="spinner"></div><p style="font-size:13px;color:var(--muted);">Calculando...</p></div></div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <div id="mundial-tab-btn" onclick="switchMundialTab('mundial')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🌍 Grupos</div>
+      <div id="stats-tab-btn" onclick="switchMundialTab('stats')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">📊 Stats</div>
+    </div>
+    <div id="mundial-tab-content">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Se actualiza cuando el admin carga los resultados.</div>
+      <div class="mundial-grid" id="mundial-grid"><div class="loading"><div class="spinner"></div><p style="font-size:13px;color:var(--muted);">Calculando...</p></div></div>
+    </div>
+    <div id="stats-tab-content" style="display:none;">
+      <div id="stats-wrap"><div class="loading"><div class="spinner"></div><p style="font-size:13px;color:var(--muted);">Calculando...</p></div></div>
+    </div>
   </div>
 
   <!-- PERFIL -->
@@ -926,7 +927,25 @@ window.nav=function(id){
   if(id==='partidos'){buildFilterTabs();renderMatches();}
   if(id==='picks'){renderGol();renderGroups();}
   if(id==='mundial')renderMundial();
-  if(id==='stats')renderStats();
+
+window.switchMundialTab=function(tab){
+  const mBtn=document.getElementById('mundial-tab-btn');
+  const sBtn=document.getElementById('stats-tab-btn');
+  const mContent=document.getElementById('mundial-tab-content');
+  const sContent=document.getElementById('stats-tab-content');
+  if(tab==='mundial'){
+    mBtn.style.background='rgba(34,197,94,0.15)';mBtn.style.borderColor='rgba(34,197,94,0.3)';mBtn.style.color='var(--g)';
+    sBtn.style.background='var(--card)';sBtn.style.borderColor='var(--border)';sBtn.style.color='var(--muted)';
+    mContent.style.display='block';sContent.style.display='none';
+    renderMundial();
+  }else{
+    sBtn.style.background='rgba(34,197,94,0.15)';sBtn.style.borderColor='rgba(34,197,94,0.3)';sBtn.style.color='var(--g)';
+    mBtn.style.background='var(--card)';mBtn.style.borderColor='var(--border)';mBtn.style.color='var(--muted)';
+    sContent.style.display='block';mContent.style.display='none';
+    renderStats();
+  }
+};
+  if(id==='mundial'){renderMundial();}
   if(id==='admin')initAdmin();
   if(id==='perfil')renderProfile();
 };

@@ -1473,7 +1473,7 @@ window.togglePick=async function(gid,tname){
   if(!S.grpicks[S.curUser])S.grpicks[S.curUser]={};
   const picks=[...(S.grpicks[S.curUser][gid]||[])];const idx=picks.indexOf(tname);
   if(idx>=0)picks.splice(idx,1);else if(picks.length<2)picks.push(tname);else{picks.shift();picks.push(tname);}
-  S.grpicks[S.curUser][gid]=picks;await sbUpsert('group_picks',{user_id:S.curUser,group_id:gid,picks:JSON.stringify(picks)});renderGroups();
+  S.grpicks[S.curUser][gid]=picks;await sbUpdate('group_picks','user_id=eq.'+S.curUser+'&group_id=eq.'+gid,{user_id:S.curUser,group_id:gid,picks:JSON.stringify(picks)});renderGroups();
 };
 
 // STATS

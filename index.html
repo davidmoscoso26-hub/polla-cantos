@@ -644,6 +644,10 @@ async function sb(table,opts={}){
 }
 async function sbGet(q){return sb(q);}
 async function sbUpsert(table,data){return sb(table,{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify(data)});}
+async function sbUpdate(table,filter,data){
+  const upd=await sb(table+'?'+filter,{method:'PATCH',headers:{'Prefer':'return=representation'},body:JSON.stringify(data)});
+  if(!upd||upd.length===0)await sb(table,{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify(data)});
+}
 
 // PLAYERS
 let PLAYERS=[
@@ -1438,7 +1442,7 @@ window.pickEcu=async function(id){
   if(isPicksLocked()){toast('🔒 Picks cerrados');return;}
   if(!S.ecuPicks)S.ecuPicks={};
   S.ecuPicks[S.curUser]=id;
-  await sbUpsert('gol_picks',{user_id:'ecu_'+S.curUser,player_id:id});
+  await sbUpdate('gol_picks','user_id=eq.ecu_'+S.curUser,{user_id:'ecu_'+S.curUser,player_id:id});
   renderEcuPick();
   const ph=ECU_PHASES.find(p=>p.id===id);
   toast('🇪🇨 Ecuador: '+ph.label);
@@ -1450,7 +1454,7 @@ function renderGol(){
 }
 window.pickGol=async function(id){
   if(isPicksLocked()){toast('🔒 Picks cerrados');return;}
-  S.golpicks[S.curUser]=id;await sbUpsert('gol_picks',{user_id:S.curUser,player_id:id});
+  S.golpicks[S.curUser]=id;await sbUpdate('gol_picks','user_id=eq.'+S.curUser,{user_id:S.curUser,player_id:id});
   renderGol();renderRanking();toast('⚽ '+GOLES.find(g=>g.id===id).name+' elegido!');
 };
 

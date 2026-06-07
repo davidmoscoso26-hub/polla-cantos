@@ -430,7 +430,7 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
     </div>
     <div class="card">
       <div class="rhead"><div>#</div><div>Jugador</div><div style="text-align:right">Pts</div><div style="text-align:right">Últimos 5</div><div style="text-align:right">Racha</div></div>
-      <div id="rlist"><div class="loading"><div class="spinner"></div><p style="font-size:13px;color:var(--muted);">Cargando...</p></div></div>
+      <div id="rlist"></div>
     </div>
     <div class="ptbl">
       <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Sistema de puntos</div>
@@ -911,6 +911,7 @@ window.doLogin=function(){
     document.getElementById('login-screen').style.display='none';
     document.getElementById('main-app').style.display='block';
     initApp();
+    renderRanking();
   }else{
     document.getElementById('pin-err').textContent='PIN incorrecto';
     ['p0','p1','p2','p3'].forEach(id=>document.getElementById(id).value='');
@@ -924,6 +925,7 @@ window.enterAsVisitor=function(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-app').style.display='block';
   initApp();
+  renderRanking();
 };
 
 window.showLogin=function(){
@@ -961,7 +963,6 @@ function initApp(){
   document.getElementById('surl').textContent=window.location.href;
   document.getElementById('player-count').textContent=PLAYERS.length;
   renderNextBanner();updateCountdown();
-  setTimeout(()=>renderRanking(), 300);
   setInterval(updateCountdown,60000);
   setInterval(updateNextMatchChip,1000);
   // countdown started in boot
@@ -1050,7 +1051,7 @@ function renderNextBanner(){
   const now=new Date();
   const next=MATCHES.find(m=>new Date(`${m.dt}T${m.tm}:00-05:00`)>now&&!S.results[m.id]?.done);
   if(!next){document.getElementById('next-banner').style.display='none';return;}
-  const dt=new Date(`${m.dt}T${m.tm}:00-05:00`.replace('${m.dt}',next.dt).replace('${m.tm}',next.tm));
+  const dt=new Date(`${next.dt}T${next.tm}:00-05:00`);
   const diff=dt-now;
   const hrs=Math.floor(diff/3600000);const mins=Math.floor((diff%3600000)/60000);
   const urgent=hrs<2;
@@ -1107,7 +1108,14 @@ function getStreak(pid){
 }
 
 function renderRanking(){
-  const scores=PLAYERS.map(p=>({...p,...calcPts(p.id)})).sort((a,b)=>b.pts-a.pts);
+  const scores=PLAYERS.map(p=>({...p,...calcPts(p.id)})).sort((a,b)=>{
+    if(b.pts!==a.pts)return b.pts-a.pts;
+    // Tie: sort by exact then wins, then random stable shuffle
+    if(b.exact!==a.exact)return b.exact-a.exact;
+    if(b.wins!==a.wins)return b.wins-a.wins;
+    // Stable random based on id to avoid flickering
+    return a.id.localeCompare(b.id);
+  });
   const medals=['🥇','🥈','🥉'];const prows=['p1','p2','p3'];const rnc=['g','s','b'];
   const dotMap={exact:'⭐',win:'✅',loss:'❌',empty:'·'};const dotCls={exact:'exact',win:'win',loss:'loss',empty:'empty'};
   const ringMap=['av-ring-gold','av-ring-silver','av-ring-bronze'];
@@ -1132,7 +1140,7 @@ function renderRanking(){
     </div>`;
   });
   S.prevRanking=scores.map(p=>p.id);
-  document.getElementById('rlist').innerHTML=html||'<div style="text-align:center;padding:24px;font-size:13px;color:var(--muted);">Sin datos aún</div>';
+  if(html)document.getElementById('rlist').innerHTML=html;
 }
 
 // PLAYER MODAL
@@ -1637,7 +1645,7 @@ function renderCarrera(){
   });
   // Start line
   svg+=`<line x1="${PAD.l}" y1="${PAD.t}" x2="${PAD.l}" y2="${PAD.t+CH}" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
-  svg+=`<text x="${PAD.l}" y="${PAD.t-6}" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)">INICIO</text>`;
+  svg+=`<text x="${PAD.l}" y="${PAD.t-8}" text-anchor="middle" font-size="16">🏁</text>`;
   // Trophy above end line
   svg+=`<line x1="${W-PAD.r}" y1="${PAD.t}" x2="${W-PAD.r}" y2="${PAD.t+CH}" stroke="rgba(250,204,21,0.2)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
   svg+=`<text x="${W-PAD.r}" y="${PAD.t-8}" text-anchor="middle" font-size="18">🏆</text>`;
@@ -1659,6 +1667,13 @@ function renderCarrera(){
       svg+=`<circle cx="${idx2x(i)}" cy="${pts2y(v)}" r="3.5" fill="${colors[p.id]}" class="cd" style="animation-delay:${dd}s"/>`;
     });
     const lx=idx2x(displaySnapshots.length-1);
+    // Offset avatar vertically if too close to others
+    const lastPts=pts[pts.length-1];
+    const closePlayers=PLAYERS.slice(0,pi).filter(pp=>{
+      const ppPts=displaySnapshots[displaySnapshots.length-1]?.positions[pp.id]||0;
+      return Math.abs(pts2y(ppPts)-pts2y(lastPts))<26;
+    });
+    const avatarOffset=closePlayers.length*0;
     const ly=pts2y(pts[pts.length-1]);
     const ad=(pi*0.18+1.3).toFixed(2);
     const photo=getPhoto(p.id);
@@ -1951,13 +1966,13 @@ async function boot(){
     document.getElementById('login-screen').style.display='none';
     document.getElementById('main-app').style.display='block';
     initApp();
-    setTimeout(()=>renderRanking(),200);
+    renderRanking();
   }else if(saved&&PLAYERS.find(x=>x.id===saved)){
     S.curUser=saved;S.isVisitor=false;
     document.getElementById('login-screen').style.display='none';
     document.getElementById('main-app').style.display='block';
     initApp();
-    setTimeout(()=>renderRanking(),200);
+    renderRanking();
   }else{
     renderLoginGrid();
   }

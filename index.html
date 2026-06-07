@@ -1942,7 +1942,7 @@ window.saveStatus=async function(){
   if(!text){toast('Escribe algo');return;}
   const expires=new Date(Date.now()+24*3600000).toISOString();
   S.statuses[S.curUser]={text,expires};
-  await sbUpsert('player_status',{user_id:S.curUser,text,expires_at:expires});
+  await sb('player_status',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({user_id:S.curUser,text,expires_at:expires})});
   toast('✅ Estado publicado por 24h');renderRanking();
   document.getElementById('my-status').value='';
 };

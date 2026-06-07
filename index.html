@@ -1384,7 +1384,7 @@ window.savePred=async function(mid){
   const h=parseInt(hEl.value);const a=parseInt(aEl.value);
   if(!S.preds[S.curUser])S.preds[S.curUser]={};
   S.preds[S.curUser][mid]={h,a};
-  await sbUpsert('predictions',{user_id:S.curUser,match_id:mid,home_score:h,away_score:a});
+  await sbUpdate('predictions','user_id=eq.'+S.curUser+'&match_id=eq.'+mid,{user_id:S.curUser,match_id:mid,home_score:h,away_score:a});
   toast('✅ Pronóstico guardado');renderMatches();renderRanking();renderNextBanner();
 };
 

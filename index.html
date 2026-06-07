@@ -804,7 +804,10 @@ async function loadData(){
     S.chats={};
     if(preds)preds.forEach(r=>{if(!S.preds[r.user_id])S.preds[r.user_id]={};S.preds[r.user_id][r.match_id]={h:r.home_score,a:r.away_score};});
     if(grp)grp.forEach(r=>{if(!S.grpicks[r.user_id])S.grpicks[r.user_id]={};S.grpicks[r.user_id][r.group_id]=JSON.parse(r.picks);});
-    if(gol)gol.forEach(r=>{S.golpicks[r.user_id]=r.player_id;});
+    if(gol)gol.forEach(r=>{
+      if(r.user_id.startsWith('ecu_')){if(!S.ecuPicks)S.ecuPicks={};S.ecuPicks[r.user_id.replace('ecu_','')]=r.player_id;}
+      else S.golpicks[r.user_id]=r.player_id;
+    });
     if(res)res.forEach(r=>{S.results[r.match_id]={h:r.home_score,a:r.away_score,done:r.done};});
     if(photos)photos.forEach(r=>{S.photos[r.user_id]=r.url;});
     if(players&&players.length>0)players.forEach(p=>{const ex=PLAYERS.find(x=>x.id===p.id);if(ex){if(p.pin)ex.pin=p.pin;}else PLAYERS.push({id:p.id,name:p.name,color:p.color||'#888',emoji:p.emoji||'⚽',pin:p.pin});});
@@ -819,7 +822,6 @@ async function loadData(){
     if(cfg)cfg.forEach(r=>{
       if(r.key==='scorer_winner')S.scorerWinner=r.value;
       if(r.key.startsWith('classified_'))S.classifieds[r.key.replace('classified_','')]=JSON.parse(r.value);
-      if(r.key.startsWith('ecu_pick_')){if(!S.ecuPicks)S.ecuPicks={};S.ecuPicks[r.key.replace('ecu_pick_','')]=r.value;}
     });
     // update player count
     const pc=document.getElementById('player-count');if(pc)pc.textContent=PLAYERS.length;
@@ -959,7 +961,7 @@ function initApp(){
   document.getElementById('surl').textContent=window.location.href;
   document.getElementById('player-count').textContent=PLAYERS.length;
   renderNextBanner();updateCountdown();
-  requestAnimationFrame(()=>requestAnimationFrame(()=>renderRanking()));
+  setTimeout(()=>renderRanking(), 300);
   setInterval(updateCountdown,60000);
   setInterval(updateNextMatchChip,1000);
   // countdown started in boot
@@ -1428,7 +1430,7 @@ window.pickEcu=async function(id){
   if(isPicksLocked()){toast('🔒 Picks cerrados');return;}
   if(!S.ecuPicks)S.ecuPicks={};
   S.ecuPicks[S.curUser]=id;
-  await sbUpsert('admin_config',{key:'ecu_pick_'+S.curUser,value:id});
+  await sbUpsert('gol_picks',{user_id:'ecu_'+S.curUser,player_id:id});
   renderEcuPick();
   const ph=ECU_PHASES.find(p=>p.id===id);
   toast('🇪🇨 Ecuador: '+ph.label);
@@ -1610,8 +1612,8 @@ function renderCarrera(){
   }
 
   const colors=PLAYERS.reduce((a,p)=>{a[p.id]=p.color;return a;},{});
-  const W=el.offsetWidth||340;const H=260;
-  const PAD={t:20,r:20,b:40,l:36};
+  const W=el.offsetWidth||340;const H=280;
+  const PAD={t:28,r:30,b:44,l:40};
   const CW=W-PAD.l-PAD.r;const CH=H-PAD.t-PAD.b;
   const maxPts=Math.max(...displaySnapshots.map(s=>Math.max(...Object.values(s.positions))))||10;
   const pts2y=v=>PAD.t+CH-(v/maxPts)*CH;
@@ -1633,6 +1635,12 @@ function renderCarrera(){
       svg+=`<text x="${x}" y="${H-PAD.b+14}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)">${s.match.split('-')[0]}</text>`;
     }
   });
+  // Start line
+  svg+=`<line x1="${PAD.l}" y1="${PAD.t}" x2="${PAD.l}" y2="${PAD.t+CH}" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  svg+=`<text x="${PAD.l}" y="${PAD.t-6}" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)">INICIO</text>`;
+  // Trophy above end line
+  svg+=`<line x1="${W-PAD.r}" y1="${PAD.t}" x2="${W-PAD.r}" y2="${PAD.t+CH}" stroke="rgba(250,204,21,0.2)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  svg+=`<text x="${W-PAD.r}" y="${PAD.t-8}" text-anchor="middle" font-size="18">🏆</text>`;
   // Animated lines per player
   svg+=`<defs><style>
     .cl{stroke-dasharray:2000;stroke-dashoffset:2000;animation:dl 1.8s ease-out forwards;}
@@ -1650,7 +1658,7 @@ function renderCarrera(){
       const dd=(pi*0.18+i*0.09+0.9).toFixed(2);
       svg+=`<circle cx="${idx2x(i)}" cy="${pts2y(v)}" r="3.5" fill="${colors[p.id]}" class="cd" style="animation-delay:${dd}s"/>`;
     });
-    const lx=idx2x(displaySnapshots.length-1)+18;
+    const lx=idx2x(displaySnapshots.length-1);
     const ly=pts2y(pts[pts.length-1]);
     const ad=(pi*0.18+1.3).toFixed(2);
     const photo=getPhoto(p.id);
@@ -1919,7 +1927,7 @@ window.saveStatus=async function(){
   if(!text){toast('Escribe algo');return;}
   const expires=new Date(Date.now()+24*3600000).toISOString();
   S.statuses[S.curUser]={text,expires};
-  await sb('player_status',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({user_id:S.curUser,text,expires_at:expires})});
+  await sbUpsert('player_status',{user_id:S.curUser,text,expires_at:expires});
   toast('✅ Estado publicado por 24h');renderRanking();
   document.getElementById('my-status').value='';
 };
@@ -1938,9 +1946,21 @@ async function boot(){
   setInterval(updateTournamentCountdown,1000);
   await loadData();
   const saved=localStorage.getItem('cur_user');
-  if(saved==='visitor'){S.curUser='visitor';S.isVisitor=true;document.getElementById('login-screen').style.display='none';document.getElementById('main-app').style.display='block';initApp();}
-  else if(saved&&PLAYERS.find(x=>x.id===saved)){S.curUser=saved;S.isVisitor=false;document.getElementById('login-screen').style.display='none';document.getElementById('main-app').style.display='block';initApp();}
-  else{renderLoginGrid();}
+  if(saved==='visitor'){
+    S.curUser='visitor';S.isVisitor=true;
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    initApp();
+    setTimeout(()=>renderRanking(),200);
+  }else if(saved&&PLAYERS.find(x=>x.id===saved)){
+    S.curUser=saved;S.isVisitor=false;
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    initApp();
+    setTimeout(()=>renderRanking(),200);
+  }else{
+    renderLoginGrid();
+  }
 }
 boot();
 </script>

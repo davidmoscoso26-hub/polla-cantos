@@ -1942,7 +1942,11 @@ window.saveStatus=async function(){
   if(!text){toast('Escribe algo');return;}
   const expires=new Date(Date.now()+24*3600000).toISOString();
   S.statuses[S.curUser]={text,expires};
-  await sb('player_status',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({user_id:S.curUser,text,expires_at:expires})});
+  // Try update first, then insert if not exists
+  const upd=await sb('player_status?user_id=eq.'+S.curUser,{method:'PATCH',headers:{'Prefer':'return=representation'},body:JSON.stringify({text,expires_at:expires})});
+  if(!upd||upd.length===0){
+    await sb('player_status',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({user_id:S.curUser,text,expires_at:expires})});
+  }
   toast('✅ Estado publicado por 24h');renderRanking();
   document.getElementById('my-status').value='';
 };

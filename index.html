@@ -1715,10 +1715,10 @@ function renderStats(){
   let totalGoles=0;doneMids.forEach(mid=>{const r=S.results[mid];totalGoles+=r.h+r.a;});
   const avgGoles=totalMatches>0?(totalGoles/totalMatches).toFixed(1):0;
 
-  function statRowHtml(p,val,sub,color='var(--g)',maxVal=100){
+  function statRowHtml(p,val,sub,color='var(--g)',maxVal=100,idx=0){
     const barW=maxVal>0?Math.round((val/maxVal)*100):0;
     return `<div class="stat-row">
-      <div class="stat-pos">${i+1}</div>
+      <div class="stat-pos">${idx+1}</div>
       ${avSm(p,32)}
       <div class="stat-info"><div class="stat-name">${p.name}</div><div class="stat-sub">${sub}</div>
         <div class="stat-bar-wrap"><div class="stat-bar" style="width:${barW}%;background:${color};"></div></div>
@@ -1736,27 +1736,27 @@ function renderStats(){
 
     <div class="stat-card">
       <div class="stat-card-title">🎯 % de aciertos</div>
-      ${byPct.map((p,i)=>statRowHtml(p,p.pct+'%',p.hits+' aciertos de '+p.totalPred,'var(--g)',100)).join('')}
+      ${byPct.map((p,i)=>statRowHtml(p,p.pct+'%',p.hits+' aciertos de '+p.totalPred,'var(--g)',100,i)).join('')}
     </div>
 
     <div class="stat-card">
       <div class="stat-card-title">⭐ Rey del marcador exacto</div>
-      ${byExactos.map((p,i)=>statRowHtml(p,p.exactos,p.exactos===1?'marcador exacto':'marcadores exactos','#facc15',Math.max(...byExactos.map(x=>x.exactos))||1)).join('')}
+      ${byExactos.map((p,i)=>statRowHtml(p,p.exactos,p.exactos===1?'marcador exacto':'marcadores exactos','#facc15',Math.max(...byExactos.map(x=>x.exactos))||1,i)).join('')}
     </div>
 
     <div class="stat-card">
       <div class="stat-card-title">🔥 Mejor forma reciente (últimos 6 partidos)</div>
-      ${byRecent.map((p,i)=>statRowHtml(p,p.recentPts+' pts','últimos 6 partidos','#f97316',Math.max(...byRecent.map(x=>x.recentPts))||1)).join('')}
+      ${byRecent.map((p,i)=>statRowHtml(p,p.recentPts+' pts','últimos 6 partidos','#f97316',Math.max(...byRecent.map(x=>x.recentPts))||1,i)).join('')}
     </div>
 
     <div class="stat-card">
       <div class="stat-card-title">💜 Marcadores únicos acertados</div>
-      ${byUniques.map((p,i)=>statRowHtml(p,p.uniques,p.uniques===1?'marcador único':'marcadores únicos','#c084fc',Math.max(...byUniques.map(x=>x.uniques))||1)).join('')}
+      ${byUniques.map((p,i)=>statRowHtml(p,p.uniques,p.uniques===1?'marcador único':'marcadores únicos','#c084fc',Math.max(...byUniques.map(x=>x.uniques))||1,i)).join('')}
     </div>
 
     ${worstPct.length>0?`<div class="stat-card">
       <div class="stat-card-title">😬 El que más falla</div>
-      ${worstPct.slice(0,3).map((p,i)=>statRowHtml(p,p.pct+'%',p.fails+' fallos','#f87171',100)).join('')}
+      ${worstPct.slice(0,3).map((p,i)=>statRowHtml(p,p.pct+'%',p.fails+' fallos','#f87171',100,i)).join('')}
     </div>`:''}
   `;
 

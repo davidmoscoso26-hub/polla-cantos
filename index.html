@@ -413,10 +413,10 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
   </div>
 
   <div class="nav">
-    <button class="nbtn on" onclick="nav('tabla')" id="nav-tabla"><span class="ni">🏆</span>Tabla</button>
+    <button class="nbtn on" onclick="nav('tabla')" id="nav-tabla"><span class="ni">🏆</span>Table</button>
     <button class="nbtn" onclick="nav('partidos')" id="nav-partidos"><span class="ni">⚽</span>Matches</button>
     <button class="nbtn" onclick="nav('picks')" id="nav-picks"><span class="ni">🎯</span>Picks</button>
-    <button class="nbtn" onclick="nav('mundial')" id="nav-mundial"><span class="ni">🌍</span>Mundial</button>
+    <button class="nbtn" onclick="nav('mundial')" id="nav-mundial"><span class="ni">🌍</span>World Cup</button>
     <button class="nbtn" onclick="nav('bracket')" id="nav-bracket"><span class="ni">🏟️</span>Bracket</button>
     <button class="nbtn" onclick="nav('admin')" id="nav-admin"><span class="ni">⚙️</span>Admin</button>
   </div>
@@ -434,7 +434,6 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
       <div id="tab-general" onclick="switchTablaTab('general')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🏆 General</div>
       <div id="tab-semana" onclick="switchTablaTab('semana')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">📅 Esta semana</div>
     </div>
-    <div style="font-size:10px;color:var(--muted);margin-bottom:8px;" id="tabla-sublabel">Desempate: más exactos → más pronósticos realizados</div>
     <div class="card">
       <div class="rhead"><div>#</div><div>Jugador</div><div style="text-align:right">Pts</div><div style="text-align:right">Últimos 5</div><div style="text-align:right">Racha</div></div>
       <div id="rlist"></div>
@@ -1284,11 +1283,11 @@ window.switchTablaTab=function(tab){
   if(tab==='general'){
     g.style.background='rgba(34,197,94,0.15)';g.style.borderColor='rgba(34,197,94,0.3)';g.style.color='var(--g)';
     s.style.background='var(--card)';s.style.borderColor='var(--border)';s.style.color='var(--muted)';
-    if(lbl)lbl.textContent='Desempate: más exactos → más pronósticos realizados';
+
   }else{
     s.style.background='rgba(34,197,94,0.15)';s.style.borderColor='rgba(34,197,94,0.3)';s.style.color='var(--g)';
     g.style.background='var(--card)';g.style.borderColor='var(--border)';g.style.color='var(--muted)';
-    if(lbl)lbl.textContent='Puntos de partidos terminados en los últimos 7 días';
+
   }
   renderRanking();
 };

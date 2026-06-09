@@ -1387,10 +1387,23 @@ window.showPlayerModal=function(pid){
 };
 window.closeModal=function(e){if(e.target.id==='modal')document.getElementById('modal').style.display='none';};
 
+window.switchRulesLang=function(lang){
+  document.getElementById('rules-es').style.display=lang==='es'?'block':'none';
+  document.getElementById('rules-en').style.display=lang==='en'?'block':'none';
+  const esBtn=document.getElementById('rules-es-btn');
+  const enBtn=document.getElementById('rules-en-btn');
+  if(esBtn){esBtn.style.background=lang==='es'?'rgba(34,197,94,0.15)':'var(--card)';esBtn.style.borderColor=lang==='es'?'rgba(34,197,94,0.3)':'var(--border)';esBtn.style.color=lang==='es'?'var(--g)':'var(--muted)';}
+  if(enBtn){enBtn.style.background=lang==='en'?'rgba(34,197,94,0.15)':'var(--card)';enBtn.style.borderColor=lang==='en'?'rgba(34,197,94,0.3)':'var(--border)';enBtn.style.color=lang==='en'?'var(--g)':'var(--muted)';}
+};
+
 window.showHelp=function(){
   document.getElementById('modal-content').innerHTML=`
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:14px;color:var(--g);">Reglamento</div>
-    <div style="font-size:13px;line-height:1.9;color:rgba(255,255,255,0.7);">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:12px;color:var(--g);">Reglamento / Rules</div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <div id="rules-es-btn" onclick="switchRulesLang('es')" style="flex:1;padding:7px;border-radius:9px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🇪🇨 Español</div>
+      <div id="rules-en-btn" onclick="switchRulesLang('en')" style="flex:1;padding:7px;border-radius:9px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🇺🇸 English</div>
+    </div>
+    <div id="rules-es" style="font-size:13px;line-height:1.9;color:rgba(255,255,255,0.7);">
       <b style="color:#fff;">⚽ Partidos (104 en total)</b><br>
       ✅ Ganador o empate acertado → <b style="color:var(--g);">2 pts</b><br>
       ⭐ Marcador exacto → <b style="color:#facc15;">5 pts</b><br>
@@ -1405,9 +1418,29 @@ window.showHelp=function(){
       Elige entre Cristiano, Messi, Vinicius Jr. o Enner Valencia.<br><br>
       <b style="color:#fff;">🇪🇨 Ecuador hasta dónde llega → +10 pts</b><br>
       Predice la fase final de la Tri.<br><br>
-      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px;margin-top:4px;">
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px;">
         🔒 <b style="color:#f87171;">Bloqueo: 11 de junio a las 13:00 EC</b><br>
-        <span style="font-size:12px;color:rgba(255,255,255,0.5);">Clasificados, goleador y Ecuador se cierran antes del primer partido. Los pronósticos de cada partido se cierran al pitazo inicial.</span>
+        <span style="font-size:12px;color:rgba(255,255,255,0.5);">Clasificados, goleador y Ecuador se cierran antes del primer partido.</span>
+      </div>
+    </div>
+    <div id="rules-en" style="display:none;font-size:13px;line-height:1.9;color:rgba(255,255,255,0.7);">
+      <b style="color:#fff;">⚽ Matches (104 total)</b><br>
+      ✅ Correct winner or draw → <b style="color:var(--g);">2 pts</b><br>
+      ⭐ Exact score → <b style="color:#facc15;">5 pts</b><br>
+      💜 Unique score (only you picked it) → <b style="color:#c084fc;">+2 pts extra</b><br><br>
+      <b style="color:#fff;">📋 Group stage classifieds</b><br>
+      Correct team advancing → <b style="color:var(--g);">3 pts</b><br>
+      Correct position (1st or 2nd) → <b style="color:var(--g);">+1 pt</b><br><br>
+      <b style="color:#fff;">🏟️ Knockout bracket</b><br>
+      R32 → 3 · Round of 16 → 5 · Quarters → 7<br>
+      Semis → 10 · Finalist → 12 · 🏆 Champion → 15 pts<br><br>
+      <b style="color:#fff;">⚽ Top scorer → +10 pts</b><br>
+      Pick between Cristiano, Messi, Vinicius Jr., Enner Valencia and more.<br><br>
+      <b style="color:#fff;">🇪🇨 How far does Ecuador go → +10 pts</b><br>
+      Predict Ecuador's final stage in the tournament.<br><br>
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px;">
+        🔒 <b style="color:#f87171;">Picks close June 11th at 1:00 PM Ecuador time</b><br>
+        <span style="font-size:12px;color:rgba(255,255,255,0.5);">Group picks, top scorer and Ecuador close before the first match.</span>
       </div>
     </div>
   `;

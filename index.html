@@ -2207,7 +2207,9 @@ window.saveStatus=async function(){
 
 window.saveMyPhoto=async function(){
   const url=document.getElementById('my-photo-url').value.trim();if(!url){toast('Ingresa una URL');return;}
-  S.photos[S.curUser]=url;await sbUpdate('photos','user_id=eq.'+S.curUser,{user_id:S.curUser,url});
+  S.photos[S.curUser]=url;
+  const photoUpd=await sb('photos?user_id=eq.'+S.curUser,{method:'PATCH',headers:{'Prefer':'return=representation'},body:JSON.stringify({url})});
+  if(!photoUpd||photoUpd.length===0)await sb('photos',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({user_id:S.curUser,url})});
   toast('✅ Foto actualizada');renderProfile();renderRanking();renderLoginGrid();
   const p=PLAYERS.find(x=>x.id===S.curUser);document.getElementById('huser-av').innerHTML=avSm(p,24);
 };

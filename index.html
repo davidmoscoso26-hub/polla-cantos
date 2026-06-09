@@ -674,7 +674,11 @@ let PLAYERS=[
   {id:'carlos',name:'Carlos', color:'#ef4444',emoji:'🧔', pin:'1006'},
   {id:'daviel',name:'Daviel', color:'#14b8a6',emoji:'👦', pin:'1007'},
   {id:'anibal',name:'Aníbal', color:'#f97316',emoji:'🧑‍🦱',pin:'1008'},
-  {id:'pedro', name:'Pedro',  color:'#6366f1',emoji:'👨', pin:'1009'}
+  {id:'pedro',    name:'Pedro',      color:'#6366f1',emoji:'👨',    pin:'1009'},
+  {id:'cantos',   name:'Cantos',     color:'#0ea5e9',emoji:'🧑‍💼',  pin:'1010'},
+  {id:'ruijie',   name:'Ruijie',     color:'#d946ef',emoji:'🧑‍🦲',  pin:'1011'},
+  {id:'crisdome', name:'Cris & Dome',color:'#f43f5e',emoji:'👫',    pin:'1012'},
+  {id:'jonathan', name:'Jonathan',   color:'#84cc16',emoji:'👨‍💻',  pin:'1013'},
 ];
 
 const GOLES=[
@@ -990,7 +994,7 @@ function initApp(){
     if(isPicksLocked())document.getElementById('picks-lock-banner').style.display='flex';
   }
   document.getElementById('surl').textContent=window.location.href;
-  document.getElementById('player-count').textContent=PLAYERS.length;
+  const pcEl=document.getElementById('player-count');if(pcEl)pcEl.textContent=PLAYERS.length;
   renderNextBanner();updateCountdown();
   setInterval(updateCountdown,60000);
   setInterval(updateNextMatchChip,1000);
@@ -1344,6 +1348,8 @@ window.showPlayerModal=function(pid){
       <span style="color:${isExact?'#facc15':hit?'var(--g)':'#f87171'};font-weight:700;">${pr.h}-${pr.a} ${isExact?'⭐':hit?'✅':'❌'}</span>
     </div>`;
   });
+  const ecu=S.ecuPicks?S.ecuPicks[pid]:null;
+  const ecuPhase=ecu?ECU_PHASES.find(p=>p.id===ecu):null;
   document.getElementById('modal-content').innerHTML=`
     <div style="text-align:center;margin-bottom:14px;">${avCircle(p,72,'av-ring-default','')}</div>
     <div style="text-align:center;font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;margin-bottom:14px;">${p.name}</div>
@@ -1352,8 +1358,16 @@ window.showPlayerModal=function(pid){
       <div style="background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:#facc15;">${exact}</div><div style="font-size:10px;color:var(--muted);">EXACTOS</div></div>
       <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:30px;">${wins}</div><div style="font-size:10px;color:var(--muted);">ACIERTOS</div></div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Goleador elegido</div>
-    <div style="font-size:14px;font-weight:700;margin-bottom:14px;">${gol?(GOLES.find(g=>g.id===gol)?.flag+' '+GOLES.find(g=>g.id===gol)?.name):'No eligió aún'}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Goleador elegido</div>
+        <div style="font-size:14px;font-weight:700;">${gol?(GOLES.find(g=>g.id===gol)?.flag+' '+GOLES.find(g=>g.id===gol)?.name):'No eligió aún'}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">🇪🇨 Ecuador</div>
+        <div style="font-size:14px;font-weight:700;">${ecuPhase?ecuPhase.emoji+' '+ecuPhase.label:'No eligió aún'}</div>
+      </div>
+    </div>
     ${predsHtml?`<div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Últimos pronósticos</div>${predsHtml}`:'<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px;">Sin pronósticos aún</div>'}
   `;
   document.getElementById('modal').style.display='flex';
@@ -2151,13 +2165,13 @@ window.addPlayer=async function(){
   if(PLAYERS.some(p=>p.pin===pin)){toast('❌ Ese PIN ya lo usa '+PLAYERS.find(p=>p.pin===pin).name);return;}
   if(PLAYERS.some(p=>p.name.toLowerCase()===name.toLowerCase())){toast('❌ Ya existe un jugador con ese nombre');return;}
   const id=name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
-  const colors=['#6366f1','#f97316','#06b6d4','#84cc16','#f43f5e','#a855f7'];
+  const colors=['#6366f1','#f97316','#06b6d4','#84cc16','#f43f5e','#a855f7','#eab308','#06b6d4','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6'];
   const color=colors[PLAYERS.length%colors.length];
   PLAYERS.push({id,name,color,emoji,pin});
   await sbUpsert('players',{id,name,color,emoji,pin});
   toast('✅ '+name+' agregado!');
   renderLoginGrid();renderPinsList();renderRanking();
-  document.getElementById('player-count').textContent=PLAYERS.length;
+  const pcEl=document.getElementById('player-count');if(pcEl)pcEl.textContent=PLAYERS.length;
   document.getElementById('new-player-name').value='';document.getElementById('new-player-pin').value='';document.getElementById('new-player-emoji').value='';
 };
 

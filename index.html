@@ -6,7 +6,7 @@
 <title>CANTOS WORLD CUP 2026</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -1791,7 +1791,6 @@ window.pickGol=async function(id){
 
 function renderGroups(){
   const locked=isPicksLocked();const up=S.grpicks[S.curUser]||{};
-  renderConfirmButtons();
   document.getElementById('ggrid').innerHTML=GROUPS.map(g=>{
     const defaultOrder=g.teams.map(t=>t.n);
     const savedPicks=up[g.id];
@@ -1803,19 +1802,23 @@ function renderGroups(){
     const labelColors=['var(--g)','rgba(255,255,255,0.5)','rgba(255,255,255,0.35)','rgba(255,255,255,0.12)'];
     const teams=orderedNames.map((tname,pos)=>{
       const t=g.teams.find(x=>x.n===tname)||{n:tname,f:'🏳'};
-      const upDis=pos===0?'opacity:0.2;pointer-events:none;':'';
-      const dnDis=pos===3?'opacity:0.2;pointer-events:none;':'';
+      const upStyle=pos===0?'opacity:0.2;':'';
+      const dnStyle=pos===3?'opacity:0.2;':'';
+      const btnStyle='width:26px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);font-size:13px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;';
+      const upBtn=locked?'':`<button class="mv-btn" data-gid="${g.id}" data-pos="${pos}" data-dir="-1" style="${btnStyle}${upStyle}">↑</button>`;
+      const dnBtn=locked?'':`<button class="mv-btn" data-gid="${g.id}" data-pos="${pos}" data-dir="1" style="${btnStyle}${dnStyle}">↓</button>`;
       return `<div style="display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:9px;margin-bottom:3px;background:${posColors[pos]};border:1px solid ${borderColors[pos]};transition:all 0.15s;">
         <span style="font-size:10px;font-weight:800;color:${labelColors[pos]};width:24px;flex-shrink:0;">${posLabels[pos]}</span>
         <span style="font-size:16px;font-family:'Noto Color Emoji','Apple Color Emoji','Segoe UI Emoji',sans-serif;">${t.f}</span>
         <span style="font-size:12px;flex:1;color:${textColors[pos]};font-weight:${pos<3?'600':'400'};">${t.n}</span>
-        ${!locked?`<div style="display:flex;gap:3px;"><button data-gid="${g.id}" data-pos="${pos}" data-dir="-1" class="mv-btn" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,${pos===0?'0.15':'0.6'});font-size:12px;cursor:${pos===0?'default':'pointer'};line-height:1;display:flex;align-items:center;justify-content:center;">↑</button><button data-gid="${g.id}" data-pos="${pos}" data-dir="1" class="mv-btn" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,${pos===3?'0.15':'0.6'});font-size:12px;cursor:${pos===3?'default':'pointer'};line-height:1;display:flex;align-items:center;justify-content:center;">↓</button></div>`:'<span style="font-size:10px;color:rgba(255,255,255,0.2);">🔒</span>'}
+        ${locked?'<span style="font-size:10px;color:rgba(255,255,255,0.2);">🔒</span>':`<div style="display:flex;gap:3px;">${upBtn}${dnBtn}</div>`}
       </div>`;
     }).join('');
     return `<div class="gcard"><div class="gtitle">Group ${g.id}<span class="gtitle-badge">${savedPicks?'✓':'—'}</span></div>
       <div style="font-size:9px;color:var(--muted);margin-bottom:7px;">Top 3 qualify · Reorder with arrows</div>
       ${teams}</div>`;
   }).join('');
+  renderConfirmButtons();
 }
 // Event delegation for group pick arrows
 document.addEventListener('click',function(e){
@@ -2441,7 +2444,7 @@ window.copyLink=function(){navigator.clipboard.writeText(window.location.href).t
 // BOOT
 function parseEmojis(){
   if(typeof twemoji!=='undefined'){
-    twemoji.parse(document.body,{folder:'svg',ext:'.svg',base:'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/'});
+    twemoji.parse(document.body,{folder:'svg',ext:'.svg'});
   }
 }
 

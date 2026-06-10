@@ -470,6 +470,7 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
         Use the <b style="color:#fff;">↑↓ arrows</b> to rank all 4 teams in each group. Your <span style="color:var(--g);font-weight:700;">top 3</span> that qualify = <span style="color:var(--g);font-weight:600;">3 pts</span> each. No order bonus.
       </div>
       <div class="ggrid" id="ggrid"></div>
+      <div id="grupos-confirm-wrap" style="margin-top:14px;"></div>
     </div>
     <div id="picks-gol" style="display:none;">
       <div class="card card-p">
@@ -479,6 +480,7 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
         </div>
         <div style="font-size:13px;color:var(--muted);margin-top:4px;">¿Quién hará más goles en el Mundial?</div>
         <div class="gol-grid" id="gol-opts" style="grid-template-columns:1fr 1fr 1fr 1fr;"></div>
+        <div id="gol-confirm-wrap" style="margin-top:14px;"></div>
       </div>
     </div>
     <div id="picks-ecu" style="display:none;">
@@ -489,6 +491,7 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
         </div>
         <div style="font-size:13px;color:var(--muted);margin-top:4px;">¿Hasta qué fase llega la Tri?</div>
         <div class="gol-grid" id="ecu-opts" style="grid-template-columns:1fr 1fr;"></div>
+        <div id="ecu-confirm-wrap" style="margin-top:14px;"></div>
       </div>
     </div>
   </div>
@@ -1738,6 +1741,7 @@ window.switchPicksTab=function(tab){
   if(tab==='ecu')renderEcuPick();
   if(tab==='gol')renderGol();
   if(tab==='grupos')renderGroups();
+  setTimeout(renderConfirmButtons,100);
 };
 
 
@@ -1787,6 +1791,7 @@ window.pickGol=async function(id){
 
 function renderGroups(){
   const locked=isPicksLocked();const up=S.grpicks[S.curUser]||{};
+  renderConfirmButtons();
   document.getElementById('ggrid').innerHTML=GROUPS.map(g=>{
     const defaultOrder=g.teams.map(t=>t.n);
     const savedPicks=up[g.id];
@@ -1804,7 +1809,7 @@ function renderGroups(){
         <span style="font-size:10px;font-weight:800;color:${labelColors[pos]};width:24px;flex-shrink:0;">${posLabels[pos]}</span>
         <span style="font-size:16px;font-family:'Noto Color Emoji','Apple Color Emoji','Segoe UI Emoji',sans-serif;">${t.f}</span>
         <span style="font-size:12px;flex:1;color:${textColors[pos]};font-weight:${pos<3?'600':'400'};">${t.n}</span>
-        ${!locked?('<div style="display:flex;gap:3px;"><button onclick="moveTeam(\''+g.id+'\','+pos+',-1)" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;'+upDis+'line-height:1;display:flex;align-items:center;justify-content:center;">↑</button><button onclick="moveTeam(\''+g.id+'\','+pos+',1)" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;'+dnDis+'line-height:1;display:flex;align-items:center;justify-content:center;">↓</button></div>'):'<span style="font-size:10px;color:rgba(255,255,255,0.2);">🔒</span>'}
+        ${!locked?`<div style="display:flex;gap:3px;"><button data-gid="${g.id}" data-pos="${pos}" data-dir="-1" class="mv-btn" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,${pos===0?'0.15':'0.6'});font-size:12px;cursor:${pos===0?'default':'pointer'};line-height:1;display:flex;align-items:center;justify-content:center;">↑</button><button data-gid="${g.id}" data-pos="${pos}" data-dir="1" class="mv-btn" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,${pos===3?'0.15':'0.6'});font-size:12px;cursor:${pos===3?'default':'pointer'};line-height:1;display:flex;align-items:center;justify-content:center;">↓</button></div>`:'<span style="font-size:10px;color:rgba(255,255,255,0.2);">🔒</span>'}
       </div>`;
     }).join('');
     return `<div class="gcard"><div class="gtitle">Group ${g.id}<span class="gtitle-badge">${savedPicks?'✓':'—'}</span></div>
@@ -1812,6 +1817,16 @@ function renderGroups(){
       ${teams}</div>`;
   }).join('');
 }
+// Event delegation for group pick arrows
+document.addEventListener('click',function(e){
+  const btn=e.target.closest('.mv-btn');
+  if(!btn)return;
+  const gid=btn.dataset.gid;
+  const pos=parseInt(btn.dataset.pos);
+  const dir=parseInt(btn.dataset.dir);
+  if(gid&&!isNaN(pos)&&!isNaN(dir))moveTeam(gid,pos,dir);
+});
+
 window.moveTeam=async function(gid,idx,dir){
   if(isPicksLocked()){toast('🔒 Picks cerrados');return;}
   if(!S.grpicks[S.curUser])S.grpicks[S.curUser]={};
@@ -1825,6 +1840,66 @@ window.moveTeam=async function(gid,idx,dir){
   await sbUpdate('group_picks','user_id=eq.'+S.curUser+'&group_id=eq.'+gid,{user_id:S.curUser,group_id:gid,picks:JSON.stringify(picks)});
   renderGroups();
 };
+
+
+function renderConfirmButtons(){
+  if(isPicksLocked())return;
+  const up=S.grpicks[S.curUser]||{};
+  const groupsDone=GROUPS.every(g=>up[g.id]&&up[g.id].length===4);
+  const golDone=!!S.golpicks[S.curUser];
+  const ecuDone=!!(S.ecuPicks&&S.ecuPicks[S.curUser]);
+
+  // Groups confirm
+  const gwrap=document.getElementById('grupos-confirm-wrap');
+  if(gwrap){
+    if(groupsDone){
+      gwrap.innerHTML=`<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px 14px;text-align:center;">
+        <div style="font-size:13px;font-weight:700;color:var(--g);margin-bottom:2px;">✅ Group picks saved!</div>
+        <div style="font-size:11px;color:var(--muted);">All 12 groups ranked. You can still change until June 11.</div>
+      </div>`;
+    }else{
+      const done=GROUPS.filter(g=>up[g.id]&&up[g.id].length===4).length;
+      gwrap.innerHTML=`<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;text-align:center;">
+        <div style="font-size:13px;color:var(--muted);">${done}/12 groups ranked — keep going!</div>
+        <div style="margin-top:6px;background:rgba(255,255,255,0.05);border-radius:6px;height:6px;overflow:hidden;"><div style="height:100%;background:var(--g);width:${Math.round(done/12*100)}%;border-radius:6px;transition:width 0.3s;"></div></div>
+      </div>`;
+    }
+  }
+
+  // Goleador confirm
+  const gwrap2=document.getElementById('gol-confirm-wrap');
+  if(gwrap2){
+    const gol=S.golpicks[S.curUser];
+    const golPlayer=gol?GOLES.find(g=>g.id===gol):null;
+    if(golPlayer){
+      gwrap2.innerHTML=`<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px 14px;text-align:center;">
+        <div style="font-size:13px;font-weight:700;color:var(--g);">✅ Top scorer saved!</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px;">${golPlayer.flag} ${golPlayer.name} · You can still change until June 11.</div>
+      </div>`;
+    }else{
+      gwrap2.innerHTML=`<div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:12px;padding:12px 14px;text-align:center;">
+        <div style="font-size:13px;color:rgba(239,68,68,0.7);">⚠️ You haven't picked a top scorer yet!</div>
+      </div>`;
+    }
+  }
+
+  // Ecuador confirm
+  const ewrap=document.getElementById('ecu-confirm-wrap');
+  if(ewrap){
+    const ecu=S.ecuPicks?S.ecuPicks[S.curUser]:null;
+    const ecuPhase=ecu?ECU_PHASES.find(p=>p.id===ecu):null;
+    if(ecuPhase){
+      ewrap.innerHTML=`<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px 14px;text-align:center;">
+        <div style="font-size:13px;font-weight:700;color:var(--g);">✅ Ecuador pick saved!</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px;">${ecuPhase.emoji} ${ecuPhase.label} · You can still change until June 11.</div>
+      </div>`;
+    }else{
+      ewrap.innerHTML=`<div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:12px;padding:12px 14px;text-align:center;">
+        <div style="font-size:13px;color:rgba(239,68,68,0.7);">⚠️ You haven't picked Ecuador's stage yet!</div>
+      </div>`;
+    }
+  }
+}
 
 // STATS
 function renderStats(){

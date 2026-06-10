@@ -979,7 +979,7 @@ window.doLogin=function(){
 
 window.enterAsVisitor=function(){
   S.curUser='visitor';S.isVisitor=true;
-  localStorage.setItem('cur_user','visitor');
+  localStorage.removeItem('cur_user');
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-app').style.display='block';
   initApp();
@@ -1780,7 +1780,7 @@ window.pickEcu=async function(id){
   if(!S.ecuPicks)S.ecuPicks={};
   S.ecuPicks[S.curUser]=id;
   await sbUpdate('gol_picks','user_id=eq.ecu_'+S.curUser,{user_id:'ecu_'+S.curUser,player_id:id});
-  renderEcuPick();
+  renderEcuPick();renderConfirmButtons();
   const ph=ECU_PHASES.find(p=>p.id===id);
   toast('🇪🇨 Ecuador: '+ph.label);
 };
@@ -1792,7 +1792,7 @@ function renderGol(){
 window.pickGol=async function(id){
   if(isPicksLocked()){toast('🔒 Picks cerrados');return;}
   S.golpicks[S.curUser]=id;await sbUpdate('gol_picks','user_id=eq.'+S.curUser,{user_id:S.curUser,player_id:id});
-  renderGol();renderRanking();toast('⚽ '+GOLES.find(g=>g.id===id).name+' elegido!');
+  renderGol();renderConfirmButtons();renderRanking();toast('⚽ '+GOLES.find(g=>g.id===id).name+' elegido!');
 };
 
 function renderGroups(){
@@ -1800,7 +1800,6 @@ function renderGroups(){
   const up=S.grpicks[S.curUser]||{};
   document.getElementById('ggrid').innerHTML=GROUPS.map(g=>{
     const picks=up[g.id]||[];
-    // picks[0]=1st, picks[1]=2nd, picks[2]=3rd, picks[3]=4th
     const posColors=['rgba(34,197,94,0.12)','rgba(99,102,241,0.1)','rgba(245,158,11,0.1)','rgba(255,255,255,0.02)'];
     const borderColors=['rgba(34,197,94,0.4)','rgba(99,102,241,0.35)','rgba(245,158,11,0.3)','rgba(255,255,255,0.05)'];
     const posLabels=['1st','2nd','3rd','4th'];
@@ -1810,9 +1809,12 @@ function renderGroups(){
       const assigned=pos>=0;
       const rowBg=assigned?posColors[pos]:'rgba(255,255,255,0.02)';
       const border=assigned?borderColors[pos]:'rgba(255,255,255,0.05)';
-      const badge=assigned?`<span style="font-size:10px;font-weight:800;color:${posLabelColors[pos]};background:${posColors[pos]};border:1px solid ${borderColors[pos]};padding:2px 7px;border-radius:8px;">${posLabels[pos]}</span>`:`<span style="width:32px;height:20px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);display:inline-block;"></span>`;
-      const clickable=!locked?`onclick="togglePick4('${g.id}','${t.n}')" style="cursor:pointer;"`:' style="cursor:default;"';
-      return `<div ${clickable} style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;margin-bottom:3px;background:${rowBg};border:1px solid ${border};transition:all 0.15s;">
+      const badge=assigned
+        ?`<span style="font-size:10px;font-weight:800;color:${posLabelColors[pos]};background:${posColors[pos]};border:1px solid ${borderColors[pos]};padding:2px 7px;border-radius:8px;">${posLabels[pos]}</span>`
+        :`<span style="width:32px;height:20px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);display:inline-block;"></span>`;
+      const dataAttrs=!locked?`data-gid="${g.id}" data-tname="${t.n}" class="pick4-btn"`:'';
+      const cursor=!locked?'cursor:pointer;':'cursor:default;';
+      return `<div ${dataAttrs} style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;margin-bottom:3px;background:${rowBg};border:1px solid ${border};transition:all 0.15s;${cursor}">
         <span style="font-size:16px;">${t.f}</span>
         <span style="font-size:12px;flex:1;color:${assigned&&pos<3?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.4)'};font-weight:${assigned&&pos<3?'600':'400'};">${t.n}</span>
         ${badge}
@@ -1828,6 +1830,27 @@ function renderGroups(){
   }).join('');
   renderConfirmButtons();
 }
+
+// Event delegation for group picks
+document.addEventListener('click',function(e){
+  const btn=e.target.closest('.pick4-btn');
+  if(!btn)return;
+  const gid=btn.dataset.gid;
+  const tname=btn.dataset.tname;
+  if(gid&&tname)togglePick4(gid,tname);
+});
+
+window.togglePick4=async function(gid,tname){
+  if(isPicksLocked()){toast('Picks are locked');return;}
+  if(!S.grpicks[S.curUser])S.grpicks[S.curUser]={};
+  let picks=[...(S.grpicks[S.curUser][gid]||[])];
+  const idx=picks.indexOf(tname);
+  if(idx>=0){picks.splice(idx,1);}
+  else{if(picks.length<4)picks.push(tname);else{picks.shift();picks.push(tname);}}
+  S.grpicks[S.curUser][gid]=picks;
+  await sbUpdate('group_picks','user_id=eq.'+S.curUser+'&group_id=eq.'+gid,{user_id:S.curUser,group_id:gid,picks:JSON.stringify(picks)});
+  renderGroups();
+};
 
 window.togglePick4=async function(gid,tname){
   if(isPicksLocked()){toast('Picks are locked');return;}

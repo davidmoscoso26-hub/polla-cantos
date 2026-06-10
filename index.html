@@ -440,12 +440,28 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
       <div id="rlist"></div>
     </div>
     <div class="ptbl">
-      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Sistema de puntos</div>
-      <div class="prow"><span class="plbl">Ganador / empate acertado</span><span class="pval">2 pts</span></div>
-      <div class="prow"><span class="plbl">Marcador exacto</span><span class="pval">5 pts</span></div>
-      <div class="prow"><span class="plbl">Marcador único (solo tú lo pusiste)</span><span class="pval">+2 pts</span></div>
-      <div class="prow"><span class="plbl">Clasificado de grupo acertado</span><span class="pval">3 pts</span></div>
-      <div class="prow"><span class="plbl">Orden correcto (1ro ó 2do)</span><span class="pval">+1 pt</span></div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <div id="pts-es-btn" onclick="switchPtsLang('es')" style="flex:1;padding:6px;border-radius:8px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:11px;font-weight:700;text-align:center;cursor:pointer;">🇪🇨 ES</div>
+        <div id="pts-en-btn" onclick="switchPtsLang('en')" style="flex:1;padding:6px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:700;text-align:center;cursor:pointer;">🇺🇸 EN</div>
+      </div>
+      <div id="pts-es">
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Sistema de puntos</div>
+        <div class="prow"><span class="plbl">Ganador / empate acertado</span><span class="pval">2 pts</span></div>
+        <div class="prow"><span class="plbl">Marcador exacto</span><span class="pval">5 pts</span></div>
+        <div class="prow"><span class="plbl">Marcador único (solo tú lo pusiste)</span><span class="pval">+2 pts</span></div>
+        <div class="prow"><span class="plbl">Equipo clasificado en tu top 3</span><span class="pval">3 pts</span></div>
+        <div class="prow"><span class="plbl">Goleador del torneo</span><span class="pval">+10 pts</span></div>
+        <div class="prow"><span class="plbl">Ecuador hasta dónde llega</span><span class="pval">+10 pts</span></div>
+      </div>
+      <div id="pts-en" style="display:none;">
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Scoring system</div>
+        <div class="prow"><span class="plbl">Correct winner or draw</span><span class="pval">2 pts</span></div>
+        <div class="prow"><span class="plbl">Exact score</span><span class="pval">5 pts</span></div>
+        <div class="prow"><span class="plbl">Unique score (only you picked it)</span><span class="pval">+2 pts</span></div>
+        <div class="prow"><span class="plbl">Classified team in your top 3</span><span class="pval">3 pts</span></div>
+        <div class="prow"><span class="plbl">Top scorer</span><span class="pval">+10 pts</span></div>
+        <div class="prow"><span class="plbl">Ecuador's final stage</span><span class="pval">+10 pts</span></div>
+      </div>
     </div>
   </div>
 
@@ -1401,7 +1417,7 @@ window.showHowTo=function(){
       <div id="howto-es-btn" onclick="switchHowToLang('es')" style="flex:1;padding:7px;border-radius:9px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🇪🇨 Español</div>
       <div id="howto-en-btn" onclick="switchHowToLang('en')" style="flex:1;padding:7px;border-radius:9px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🇺🇸 English</div>
     </div>
-    <div id="howto-es">
+    <div id="howto-en" style="display:none;">
       <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:rgba(255,255,255,0.75);">
         <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:12px 14px;border-left:3px solid var(--g);">
           <div style="font-weight:700;color:#fff;margin-bottom:4px;">Step 1 · Fill your picks <span style="color:#f87171;font-size:11px;">closes June 11 at 1PM EC</span></div>
@@ -1421,7 +1437,7 @@ window.showHowTo=function(){
         </div>
       </div>
     </div>
-    <div id="howto-en" style="display:none;">
+    <div id="howto-es">
       <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:rgba(255,255,255,0.75);">
         <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:12px 14px;border-left:3px solid var(--g);">
           <div style="font-weight:700;color:#fff;margin-bottom:4px;">Paso 1 · Llena tus picks <span style="color:#f87171;font-size:11px;">cierra el 11 jun 13:00 EC</span></div>
@@ -1452,6 +1468,15 @@ window.switchHowToLang=function(lang){
   const esBtn=document.getElementById('howto-es-btn');
   if(enBtn){enBtn.style.background=lang==='en'?'rgba(34,197,94,0.15)':'var(--card)';enBtn.style.borderColor=lang==='en'?'rgba(34,197,94,0.3)':'var(--border)';enBtn.style.color=lang==='en'?'var(--g)':'var(--muted)';}
   if(esBtn){esBtn.style.background=lang==='es'?'rgba(34,197,94,0.15)':'var(--card)';esBtn.style.borderColor=lang==='es'?'rgba(34,197,94,0.3)':'var(--border)';esBtn.style.color=lang==='es'?'var(--g)':'var(--muted)';}
+};
+
+window.switchPtsLang=function(lang){
+  document.getElementById('pts-es').style.display=lang==='es'?'block':'none';
+  document.getElementById('pts-en').style.display=lang==='en'?'block':'none';
+  const esBtn=document.getElementById('pts-es-btn');
+  const enBtn=document.getElementById('pts-en-btn');
+  if(esBtn){esBtn.style.background=lang==='es'?'rgba(34,197,94,0.15)':'var(--card)';esBtn.style.borderColor=lang==='es'?'rgba(34,197,94,0.3)':'var(--border)';esBtn.style.color=lang==='es'?'var(--g)':'var(--muted)';}
+  if(enBtn){enBtn.style.background=lang==='en'?'rgba(34,197,94,0.15)':'var(--card)';enBtn.style.borderColor=lang==='en'?'rgba(34,197,94,0.3)':'var(--border)';enBtn.style.color=lang==='en'?'var(--g)':'var(--muted)';}
 };
 
 window.switchRulesLang=function(lang){

@@ -640,15 +640,6 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
 </div>
 <div class="toast" id="toast"></div>
 
-<!-- REMINDER MODAL -->
-<div id="reminder-modal" style="display:none;position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);">
-  <div style="background:#0f1e30;border:1px solid rgba(250,204,21,0.3);border-radius:20px;padding:24px 20px;width:90%;max-width:340px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.6);">
-    <div style="font-size:36px;margin-bottom:10px;">⏰</div>
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:#facc15;margin-bottom:6px;" id="reminder-modal-title"></div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:18px;line-height:1.6;" id="reminder-modal-sub"></div>
-    <button onclick="dismissReminder()" style="width:100%;padding:12px;border-radius:12px;background:var(--g);border:none;color:#060f1e;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;">Got it ✓</button>
-  </div>
-</div>
 
 <script>
 const SB_URL='https://rpjuuvnirjjmzzltcvzj.supabase.co';
@@ -979,7 +970,7 @@ window.doLogin=function(){
 
 window.enterAsVisitor=function(){
   S.curUser='visitor';S.isVisitor=true;
-  localStorage.removeItem('cur_user');
+  localStorage.removeItem('cur_user'); // never save visitor
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main-app').style.display='block';
   initApp();
@@ -1020,7 +1011,7 @@ function initApp(){
   }
   document.getElementById('surl').textContent=window.location.href;
   const pcEl=document.getElementById('player-count');if(pcEl)pcEl.textContent=PLAYERS.length;
-  renderNextBanner();updateCountdown();showReminderBanner();
+  renderNextBanner();updateCountdown();
   setInterval(updateCountdown,60000);
   setInterval(updateNextMatchChip,1000);
   // countdown started in boot
@@ -1198,26 +1189,7 @@ window.switchMundialTab=function(tab){
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-window.dismissReminder=function(){
-  document.getElementById('reminder-modal').style.display='none';
-  localStorage.setItem('reminder_dismissed_'+new Date().toDateString(),'1');
-};
 
-function showReminderBanner(){
-  if(S.isVisitor)return;
-  const now=new Date();
-  if(now>=LOCK_DT)return;
-  const key='reminder_dismissed_'+now.toDateString();
-  if(localStorage.getItem(key))return;
-  const diff=LOCK_DT-now;
-  const hrs=Math.floor(diff/3600000);
-  const days=Math.floor(diff/86400000);
-  const title=days>0?`${days} day${days>1?' s':''} left to fill your picks!`:`Only ${hrs}h left to fill your picks!`;
-  const sub="Don't forget: group picks, top scorer and Ecuador. Good luck!";
-  document.getElementById('reminder-modal-title').textContent=title;
-  document.getElementById('reminder-modal-sub').textContent=sub;
-  document.getElementById('reminder-modal').style.display='flex';
-}
 
 window.manualRefresh=async function(){
   const btn=document.getElementById('refresh-btn-tabla');
@@ -1815,16 +1787,16 @@ function renderGroups(){
       const dataAttrs=!locked?`data-gid="${g.id}" data-tname="${t.n}" class="pick4-btn"`:'';
       const cursor=!locked?'cursor:pointer;':'cursor:default;';
       return `<div ${dataAttrs} style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;margin-bottom:3px;background:${rowBg};border:1px solid ${border};transition:all 0.15s;${cursor}">
-        <span style="font-size:16px;">${t.f}</span>
-        <span style="font-size:12px;flex:1;color:${assigned&&pos<3?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.4)'};font-weight:${assigned&&pos<3?'600':'400'};">${t.n}</span>
-        ${badge}
+        <span style="font-size:16px;font-family:'Noto Color Emoji','Apple Color Emoji','Segoe UI Emoji',sans-serif;pointer-events:none;">${t.f}</span>
+        <span style="font-size:12px;flex:1;color:${assigned&&pos<3?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.4)'};font-weight:${assigned&&pos<3?'600':'400'};pointer-events:none;">${t.n}</span>
+        <span style="pointer-events:none;">${badge}</span>
       </div>`;
     }).join('');
     const lockedCount=picks.filter((t,i)=>i<3&&t).length;
     const badgeColor=lockedCount===3?'var(--g)':lockedCount>0?'#f59e0b':'rgba(255,255,255,0.25)';
     return `<div class="gcard">
       <div class="gtitle">Group ${g.id}<span class="gtitle-badge" style="color:${badgeColor};">${lockedCount}/3 in</span></div>
-      <div style="font-size:9px;color:var(--muted);margin-bottom:7px;">Tap teams in order · Top 3 qualify · 3 pts each</div>
+      <div style="font-size:9px;color:var(--muted);margin-bottom:7px;">Tap teams in order · Top 3 = 3 pts each if they qualify (1st, 2nd or best 3rd)</div>
       ${teams}
     </div>`;
   }).join('');
@@ -2482,22 +2454,21 @@ window.copyLink=function(){navigator.clipboard.writeText(window.location.href).t
 async function boot(){
   updateTournamentCountdown();
   setInterval(updateTournamentCountdown,1000);
+  // Show login immediately
+  renderLoginGrid();
+  // Load data (includes extra players from Supabase)
   await loadData();
+  // Re-render with updated player list
+  renderLoginGrid();
+  // Check if user was logged in
   const saved=localStorage.getItem('cur_user');
-  if(saved==='visitor'){
-    S.curUser='visitor';S.isVisitor=true;
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('main-app').style.display='block';
-    initApp();
-    renderRanking();
-  }else if(saved&&PLAYERS.find(x=>x.id===saved)){
+  const player=PLAYERS.find(x=>x.id===saved);
+  if(saved&&player){
     S.curUser=saved;S.isVisitor=false;
     document.getElementById('login-screen').style.display='none';
     document.getElementById('main-app').style.display='block';
     initApp();
     renderRanking();
-  }else{
-    renderLoginGrid();
   }
 }
 boot();

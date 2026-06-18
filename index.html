@@ -700,7 +700,6 @@ let PLAYERS=[
   {id:'daviel',name:'Daviel', color:'#14b8a6',emoji:'👦', pin:'1007'},
   {id:'anibal',name:'Aníbal', color:'#f97316',emoji:'🧑‍🦱',pin:'1008'},
   {id:'pedro',    name:'Pedro',      color:'#6366f1',emoji:'👨',    pin:'1009'},
-  {id:'cantos',   name:'Cantos',     color:'#0ea5e9',emoji:'🧑‍💼',  pin:'1010'},
   {id:'ruijie',   name:'Ruijie',     color:'#d946ef',emoji:'🧑‍🦲',  pin:'1011'},
   {id:'crisdome', name:'Cris & Dome',color:'#f43f5e',emoji:'👫',    pin:'1012'},
   {id:'jonathan', name:'Jonathan',   color:'#84cc16',emoji:'👨‍💻',  pin:'1013'},
@@ -1350,13 +1349,16 @@ function renderRanking(){
     const hasPoints=scores.some(x=>x.pts>0);
     const isLast=hasPoints&&i===scores.length-1&&scores.length>1;
     const ringCls=i<3?ringMap[i]:streak>=5?'av-ring-fire':'av-ring-default';
-    const badge=streak>=5?'🔥':isLast?'💀':'';
+    const isRelg2=hasPoints&&i===scores.length-2&&scores.length>2&&p.pts>0;
+    const isRelg3=hasPoints&&i===scores.length-3&&scores.length>3&&p.pts>0;
+    const badge=streak>=5?'🔥':isLast?'☠️':isRelg2?'📉':isRelg3?'😬':'';
     const dots=last5.map(d=>`<div class="rdot ${dotCls[d]}">${dotMap[d]}</div>`).join('');
     const isMe=!S.isVisitor&&p.id===S.curUser;
     // check position change
     const prevIdx=S.prevRanking.indexOf(p.id);
     const animCls=prevIdx>=0&&prevIdx>i?'bounce-up':prevIdx>=0&&prevIdx<i?'shake':'';
-    html+=`<div class="rrow ${i<3?prows[i]:''} ${animCls}" style="${isMe?'box-shadow:inset 3px 0 0 '+p.color+';':''}" onclick="showPlayerModal('${p.id}')">
+    const relegBg=isLast&&p.pts>0?'background:linear-gradient(90deg,rgba(239,68,68,0.22),rgba(239,68,68,0.06));border-left:4px solid rgba(239,68,68,0.9);':isRelg2&&p.pts>0?'background:linear-gradient(90deg,rgba(239,68,68,0.13),rgba(239,68,68,0.02));border-left:4px solid rgba(239,68,68,0.55);':isRelg3&&p.pts>0?'background:linear-gradient(90deg,rgba(239,68,68,0.07),transparent);border-left:4px solid rgba(239,68,68,0.3);':'';
+    html+=`<div class="rrow ${i<3?prows[i]:''} ${animCls}" style="${isMe?'box-shadow:inset 3px 0 0 '+p.color+';':''}${relegBg}" onclick="showPlayerModal('${p.id}')">
       <div class="rnum ${i<3?rnc[i]:''}">${i<3?medals[i]:i+1}</div>
       <div class="pinfo">${avCircle(p,40,ringCls,badge,true)}<div><div class="pname">${p.name}${isMe?' <span style="font-size:9px;color:var(--g);">(tú)</span>':''}</div><div class="psub">${p.pts>0?p.exact+' exactos · '+p.wins+' aciertos':'Sin puntos aún'}</div></div></div>
       <div><div class="rpts">${p.pts}</div><div class="rpts-lbl">pts</div></div>
@@ -2245,13 +2247,31 @@ function renderAdminMatches(){
   const q=(document.getElementById('admin-search')?.value||'').toLowerCase().trim();
   let list=MATCHES;
   if(q)list=list.filter(m=>m.h.n.toLowerCase().includes(q)||m.a.n.toLowerCase().includes(q)||m.gr.toLowerCase().includes(q));
-  list=list.slice(0,20);
-  document.getElementById('admin-match-list').innerHTML=list.map(m=>{
+  // Sort: live first, then pending by date, then done at bottom
+  list=[...list].sort((a,b)=>{
+    const aDone=S.results[a.id]?.done?1:0;
+    const bDone=S.results[b.id]?.done?1:0;
+    if(aDone!==bDone)return aDone-bDone;
+    const aLive=matchLocked(a)&&!S.results[a.id]?.done?0:1;
+    const bLive=matchLocked(b)&&!S.results[b.id]?.done?0:1;
+    if(aLive!==bLive)return aLive-bLive;
+    return new Date(a.dt+'T'+a.tm+':00-05:00')-new Date(b.dt+'T'+b.tm+':00-05:00');
+  });
+  if(!q)list=list.slice(0,30);
+  // Find where done starts
+  const firstDoneIdx=list.findIndex(m=>S.results[m.id]?.done);
+  document.getElementById('admin-match-list').innerHTML=list.map((m,i)=>{
     const res=S.results[m.id];const isDone=res?.done;const isLive=matchLocked(m)&&!isDone;
-    const status=isDone?`<span class="admin-match-status" style="color:var(--g);">✅ ${res.h}-${res.a}</span>`:isLive?`<span class="admin-match-status" style="color:#f87171;">🔴 En juego</span>`:`<span class="admin-match-status" style="color:var(--muted);">Pendiente</span>`;
-    return `<div class="admin-match-row ${S.selMatch===m.id?'selected':''}" onclick="selMatch('${m.id}')">
+    const status=isDone
+      ?`<span class="admin-match-status" style="color:var(--g);">✅ ${res.h}-${res.a}</span>`
+      :isLive
+        ?`<span class="admin-match-status" style="color:#f87171;">🔴 En juego</span>`
+        :`<span class="admin-match-status" style="color:var(--muted);">Pendiente</span>`;
+    const separator=i===firstDoneIdx&&firstDoneIdx>0?`<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;padding:8px 4px 4px;">— Terminados —</div>`:'';
+    const rowBg=isDone?'rgba(255,255,255,0.02)':isLive?'rgba(239,68,68,0.06)':'';
+    return separator+`<div class="admin-match-row ${S.selMatch===m.id?'selected':''}" onclick="selMatch('${m.id}')" style="background:${rowBg};">
       <div>${m.h.f}${m.a.f}</div>
-      <div class="admin-match-teams">${m.h.n} vs ${m.a.n}</div>
+      <div class="admin-match-teams" style="opacity:${isDone?'0.4':'1'};">${m.h.n} vs ${m.a.n}</div>
       <div class="admin-match-date">${m.dt} ${m.tm}</div>
       ${status}
     </div>`;

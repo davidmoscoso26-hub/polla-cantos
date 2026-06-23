@@ -1404,7 +1404,7 @@ function getWeekPositionChange(pid,currentScores){
 
 
 function renderRanking(){
-  const scores=PLAYERS.map(p=>({...p,...calcPts(p.id)})).sort((a,b)=>{
+  const scores=PLAYERS.map(p=>({...p,...(tablaMode==='semana'?calcWeeklyPts(p.id):calcPts(p.id))})).sort((a,b)=>{
     if(b.pts!==a.pts)return b.pts-a.pts;
     // Tie: sort by exact then wins, then random stable shuffle
     if(b.exact!==a.exact)return b.exact-a.exact;

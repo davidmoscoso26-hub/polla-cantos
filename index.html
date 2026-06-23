@@ -433,7 +433,15 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
     </div>
     <div style="display:flex;gap:6px;margin-bottom:10px;">
       <div id="tab-general" onclick="switchTablaTab('general')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🏆 General</div>
-      <div id="tab-semana" onclick="switchTablaTab('semana')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">📅 Esta semana</div>
+      <div id="tab-semana" onclick="switchTablaTab('semana')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">📅 Por semana</div>
+    </div>
+    <div id="week-nav" style="display:none;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <button onclick="changeWeek(-1)" id="week-prev" style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:16px;cursor:pointer;">←</button>
+      <div style="text-align:center;">
+        <div style="font-size:13px;font-weight:700;color:#fff;" id="week-label">Semana 1</div>
+        <div style="font-size:10px;color:var(--muted);" id="week-dates"></div>
+      </div>
+      <button onclick="changeWeek(1)" id="week-next" style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);font-size:16px;cursor:pointer;">→</button>
     </div>
     <div class="card">
       <div class="rhead"><div>#</div><div>Jugador</div><div style="text-align:right">Pts</div><div style="text-align:right">Últimos 5</div><div style="text-align:right">Racha</div></div>
@@ -1298,31 +1306,71 @@ function getStreak(pid){
 }
 
 let tablaMode='general';
+let currentWeek=1;
+const TORNEO_START=new Date('2026-06-11T00:00:00-05:00');
+
+function getWeekBounds(week){
+  const start=new Date(TORNEO_START.getTime()+(week-1)*7*24*3600000);
+  const end=new Date(start.getTime()+7*24*3600000);
+  return{start,end};
+}
+
+function getTotalWeeks(){
+  const done=MATCHES.filter(m=>S.results[m.id]?.done);
+  if(done.length===0)return 1;
+  const last=done[done.length-1];
+  const lastDt=new Date(last.dt+'T'+last.tm+':00-05:00');
+  return Math.max(1,Math.ceil((lastDt-TORNEO_START)/(7*24*3600000)));
+}
+
+window.changeWeek=function(dir){
+  const max=getTotalWeeks();
+  currentWeek=Math.max(1,Math.min(max,currentWeek+dir));
+  updateWeekNav();
+  renderRanking();
+};
+
+function updateWeekNav(){
+  const max=getTotalWeeks();
+  const{start,end}=getWeekBounds(currentWeek);
+  const fmt=d=>d.toLocaleDateString('es-EC',{day:'numeric',month:'short'});
+  const lbl=document.getElementById('week-label');
+  const dates=document.getElementById('week-dates');
+  const prev=document.getElementById('week-prev');
+  const next=document.getElementById('week-next');
+  if(lbl)lbl.textContent='Semana '+currentWeek+' de '+max;
+  if(dates)dates.textContent=fmt(start)+' – '+fmt(new Date(end-1));
+  if(prev)prev.style.opacity=currentWeek===1?'0.2':'1';
+  if(next)next.style.opacity=currentWeek===max?'0.2':'1';
+}
+
 window.switchTablaTab=function(tab){
   tablaMode=tab;
   const g=document.getElementById('tab-general');
   const s=document.getElementById('tab-semana');
-  const lbl=document.getElementById('tabla-sublabel');
+  const nav=document.getElementById('week-nav');
   if(tab==='general'){
     g.style.background='rgba(34,197,94,0.15)';g.style.borderColor='rgba(34,197,94,0.3)';g.style.color='var(--g)';
     s.style.background='var(--card)';s.style.borderColor='var(--border)';s.style.color='var(--muted)';
-
+    if(nav)nav.style.display='none';
   }else{
     s.style.background='rgba(34,197,94,0.15)';s.style.borderColor='rgba(34,197,94,0.3)';s.style.color='var(--g)';
     g.style.background='var(--card)';g.style.borderColor='var(--border)';g.style.color='var(--muted)';
-
+    currentWeek=getTotalWeeks();
+    if(nav)nav.style.display='flex';
+    updateWeekNav();
   }
   renderRanking();
 };
 
 function calcWeeklyPts(pid){
   let pts=0,exact=0,wins=0;const pr=S.preds[pid]||{};
-  const weekAgo=new Date(Date.now()-7*24*3600000);
+  const{start,end}=getWeekBounds(currentWeek);
   Object.keys(S.results).filter(mid=>{
     const m=MATCHES.find(x=>x.id===mid);
     if(!m||!S.results[mid]?.done)return false;
-    const dt=new Date(m.dt+'T23:59:00-05:00');
-    return dt>=weekAgo;
+    const dt=new Date(m.dt+'T'+m.tm+':00-05:00');
+    return dt>=start&&dt<end;
   }).forEach(mid=>{
     const res=S.results[mid];const p=pr[mid];if(!p)return;
     if(p.h===res.h&&p.a===res.a){pts+=5;exact++;const all=PLAYERS.map(pl=>(S.preds[pl.id]||{})[mid]).filter(Boolean);if(all.filter(x=>x.h===p.h&&x.a===p.a).length===1)pts+=2;}
@@ -1330,6 +1378,30 @@ function calcWeeklyPts(pid){
   });
   return{pts,exact,wins};
 }
+
+function getWeekPositionChange(pid,currentScores){
+  if(currentWeek<=1)return 0;
+  const{start,end}=getWeekBounds(currentWeek-1);
+  const prevScores=PLAYERS.map(p=>{
+    let pts=0;const pr=S.preds[p.id]||{};
+    Object.keys(S.results).filter(mid=>{
+      const m=MATCHES.find(x=>x.id===mid);
+      if(!m||!S.results[mid]?.done)return false;
+      const dt=new Date(m.dt+'T'+m.tm+':00-05:00');
+      return dt>=start&&dt<end;
+    }).forEach(mid=>{
+      const res=S.results[mid];const pred=pr[mid];if(!pred)return;
+      if(pred.h===res.h&&pred.a===res.a)pts+=5;
+      else{const pw=pred.h>pred.a?'h':pred.h<pred.a?'a':'d';const rw=res.h>res.a?'h':res.h<res.a?'a':'d';if(pw===rw)pts+=2;}
+    });
+    return{id:p.id,pts};
+  }).sort((a,b)=>b.pts-a.pts);
+  const prevPos=prevScores.findIndex(p=>p.id===pid);
+  const curPos=currentScores.findIndex(p=>p.id===pid);
+  return prevPos-curPos;
+}
+
+
 
 function renderRanking(){
   const scores=PLAYERS.map(p=>({...p,...calcPts(p.id)})).sort((a,b)=>{
@@ -1354,6 +1426,8 @@ function renderRanking(){
     const badge=streak>=5?'🔥':isLast?'☠️':isRelg2?'📉':isRelg3?'😬':'';
     const dots=last5.map(d=>`<div class="rdot ${dotCls[d]}">${dotMap[d]}</div>`).join('');
     const isMe=!S.isVisitor&&p.id===S.curUser;
+    const weekChange=tablaMode==='semana'?getWeekPositionChange(p.id,scores):0;
+    const changeChip=tablaMode==='semana'&&weekChange!==0?`<span style="font-size:10px;font-weight:700;color:${weekChange>0?'var(--g)':'#f87171'};background:${weekChange>0?'rgba(34,197,94,0.1)':'rgba(239,68,68,0.1)'};padding:2px 6px;border-radius:6px;margin-left:4px;">${weekChange>0?'↑'+weekChange:'↓'+Math.abs(weekChange)}</span>`:'';
     // check position change
     const prevIdx=S.prevRanking.indexOf(p.id);
     const animCls=prevIdx>=0&&prevIdx>i?'bounce-up':prevIdx>=0&&prevIdx<i?'shake':'';
@@ -2019,11 +2093,10 @@ function renderCarrera(){
   const el=document.getElementById('carrera-wrap');if(!el)return;
   const doneMids=MATCHES.filter(m=>S.results[m.id]?.done);
 
-  // Build ranking snapshots after each match
+  // Build cumulative snapshots
   const snapshots=[];
   doneMids.forEach((m,idx)=>{
-    const snap={match:`${m.h.n.split(' ')[0]} vs ${m.a.n.split(' ')[0]}`,positions:{}};
-    // calc points up to this match
+    const snap={match:m.h.n.split(' ')[0]+' vs '+m.a.n.split(' ')[0],positions:{}};
     const doneSoFar=doneMids.slice(0,idx+1).map(x=>x.id);
     PLAYERS.forEach(p=>{
       let pts=0;const pr=S.preds[p.id]||{};
@@ -2037,114 +2110,101 @@ function renderCarrera(){
     snapshots.push(snap);
   });
 
-  // Demo data if no real matches
-  const hasRealData=snapshots.length>0;
-  const isDemoMode=!hasRealData;
-  let displaySnapshots=snapshots;
+  const isDemoMode=snapshots.length===0;
+  const WINDOW=12;
+  let displaySnapshots=snapshots.length>WINDOW?snapshots.slice(-WINDOW):snapshots;
+
   if(isDemoMode){
-    // Generate demo data
-    const demoMatches=['México-Sudáfrica','Corea-Rep.Checa','Canadá-Bosnia','USA-Paraguay','Qatar-Suiza'];
-    let cumPts={};
-    PLAYERS.forEach(p=>cumPts[p.id]=0);
+    const demoMatches=['México','Canadá','Alemania','España','Ecuador','Brasil','Francia','Argentina','Portugal','Países Bajos','England','Bélgica'];
+    let cum={};PLAYERS.forEach(p=>cum[p.id]=0);
     displaySnapshots=demoMatches.map(name=>{
       const snap={match:name,positions:{}};
-      PLAYERS.forEach(p=>{
-        cumPts[p.id]+=Math.random()<0.4?5:Math.random()<0.6?2:0;
-        snap.positions[p.id]=Math.round(cumPts[p.id]);
-      });
+      PLAYERS.forEach(p=>{cum[p.id]+=Math.random()<0.4?5:Math.random()<0.6?2:0;snap.positions[p.id]=Math.round(cum[p.id]);});
       return snap;
     });
   }
 
   if(displaySnapshots.length===0){
-    el.innerHTML=`<div style="text-align:center;padding:40px;font-size:13px;color:var(--muted);">El gráfico aparecerá cuando haya partidos terminados ⚽</div>`;
+    el.innerHTML='<div style="text-align:center;padding:40px;font-size:13px;color:var(--muted);">El gráfico aparecerá cuando haya partidos terminados ⚽</div>';
     return;
   }
 
-  const colors=PLAYERS.reduce((a,p)=>{a[p.id]=p.color;return a;},{});
-  const W=el.offsetWidth||340;const H=280;
-  const PAD={t:28,r:30,b:44,l:40};
-  const CW=W-PAD.l-PAD.r;const CH=H-PAD.t-PAD.b;
-  const maxPts=Math.max(...displaySnapshots.map(s=>Math.max(...Object.values(s.positions))))||10;
+  // Current standings (sorted)
+  const lastSnap=displaySnapshots[displaySnapshots.length-1];
+  const ranked=PLAYERS.map(p=>({...p,pts:lastSnap.positions[p.id]||0})).sort((a,b)=>b.pts-a.pts);
+
+  const W=el.offsetWidth||320;
+  const LEGEND_W=100; // right side legend width
+  const SVG_W=W-LEGEND_W-8;
+  const H=Math.max(200,PLAYERS.length*22+40);
+  const PAD={t:24,r:12,b:36,l:36};
+  const CW=SVG_W-PAD.l-PAD.r;
+  const CH=H-PAD.t-PAD.b;
+  const maxPts=Math.max(...displaySnapshots.map(s=>Math.max(...Object.values(s.positions),1)))||10;
   const pts2y=v=>PAD.t+CH-(v/maxPts)*CH;
   const idx2x=i=>PAD.l+(i/(displaySnapshots.length-1||1))*CW;
 
-  // Build SVG
-  let svg=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible;">`;
-  // Grid lines
+  // Build SVG (no avatars at end)
+  let svg=`<svg width="${SVG_W}" height="${H}" viewBox="0 0 ${SVG_W} ${H}" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">`;
+  // Grid
   [0,25,50,75,100].forEach(pct=>{
     const y=pts2y(maxPts*pct/100);
     const val=Math.round(maxPts*pct/100);
-    svg+=`<line x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
-    svg+=`<text x="${PAD.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.25)">${val}</text>`;
+    svg+=`<line x1="${PAD.l}" y1="${y}" x2="${SVG_W-PAD.r}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
+    svg+=`<text x="${PAD.l-4}" y="${y+4}" text-anchor="end" font-size="8" fill="rgba(255,255,255,0.2)">${val}</text>`;
   });
-  // X labels (every 2nd match)
-  displaySnapshots.forEach((s,i)=>{
-    if(i%2===0||i===displaySnapshots.length-1){
-      const x=idx2x(i);
-      svg+=`<text x="${x}" y="${H-PAD.b+14}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)">${s.match.split('-')[0]}</text>`;
-    }
+  // X labels — start, middle, end only
+  [0,Math.floor(displaySnapshots.length/2),displaySnapshots.length-1].filter((v,i,a)=>a.indexOf(v)===i).forEach(i=>{
+    const x=idx2x(i);
+    const name=displaySnapshots[i].match.split(' ')[0].slice(0,6);
+    svg+=`<text x="${x}" y="${H-PAD.b+12}" text-anchor="middle" font-size="7.5" fill="rgba(255,255,255,0.25)">${name}</text>`;
   });
-  // Start line
-  svg+=`<line x1="${PAD.l}" y1="${PAD.t}" x2="${PAD.l}" y2="${PAD.t+CH}" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
-  svg+=`<text x="${PAD.l}" y="${PAD.t-8}" text-anchor="middle" font-size="16">🏁</text>`;
-  // Trophy above end line
-  svg+=`<line x1="${W-PAD.r}" y1="${PAD.t}" x2="${W-PAD.r}" y2="${PAD.t+CH}" stroke="rgba(250,204,21,0.2)" stroke-width="1.5" stroke-dasharray="4,3"/>`;
-  svg+=`<text x="${W-PAD.r}" y="${PAD.t-8}" text-anchor="middle" font-size="18">🏆</text>`;
-  // Animated lines per player
-  svg+=`<defs><style>
-    .cl{stroke-dasharray:2000;stroke-dashoffset:2000;animation:dl 1.8s ease-out forwards;}
-    .cd{opacity:0;animation:pd 0.3s ease-out forwards;}
-    @keyframes dl{to{stroke-dashoffset:0;}}
-    @keyframes pd{to{opacity:1;}}
-  </style></defs>`;
+  // Start/end lines
+  svg+=`<text x="${PAD.l}" y="${PAD.t-6}" text-anchor="middle" font-size="13">🏁</text>`;
+  svg+=`<text x="${SVG_W-PAD.r}" y="${PAD.t-6}" text-anchor="middle" font-size="14">🏆</text>`;
+  // Lines + dots per player (NO avatars)
+  svg+=`<defs><style>.cl{stroke-dasharray:2000;stroke-dashoffset:2000;animation:dl 1.8s ease-out forwards;}.cd{opacity:0;animation:pd 0.3s ease-out forwards;}@keyframes dl{to{stroke-dashoffset:0;}}@keyframes pd{to{opacity:1;}}</style></defs>`;
   PLAYERS.forEach((p,pi)=>{
-    const delay=(pi*0.18).toFixed(2);
+    const delay=(pi*0.12).toFixed(2);
     const pts=displaySnapshots.map(s=>s.positions[p.id]||0);
     const points=pts.map((v,i)=>idx2x(i)+','+pts2y(v)).join(' ');
-    svg+=`<polyline points="${points}" fill="none" stroke="${colors[p.id]}" stroke-width="5" opacity="0.12" class="cl" style="animation-delay:${delay}s"/>`;
-    svg+=`<polyline points="${points}" fill="none" stroke="${colors[p.id]}" stroke-width="2.5" opacity="0.9" class="cl" style="animation-delay:${delay}s"/>`;
-    pts.forEach((v,i)=>{
-      const dd=(pi*0.18+i*0.09+0.9).toFixed(2);
-      svg+=`<circle cx="${idx2x(i)}" cy="${pts2y(v)}" r="3.5" fill="${colors[p.id]}" class="cd" style="animation-delay:${dd}s"/>`;
-    });
-    const lx=idx2x(displaySnapshots.length-1);
-    // Offset avatar vertically if too close to others
-    const lastPts=pts[pts.length-1];
-    const closePlayers=PLAYERS.slice(0,pi).filter(pp=>{
-      const ppPts=displaySnapshots[displaySnapshots.length-1]?.positions[pp.id]||0;
-      return Math.abs(pts2y(ppPts)-pts2y(lastPts))<26;
-    });
-    const avatarOffset=closePlayers.length*0;
-    const ly=pts2y(pts[pts.length-1]);
-    const ad=(pi*0.18+1.3).toFixed(2);
-    const photo=getPhoto(p.id);
-    const uid='c'+p.id;
-    svg+=`<defs><clipPath id="${uid}"><circle cx="${lx}" cy="${ly}" r="11"/></clipPath></defs>`;
-    svg+=`<circle cx="${lx}" cy="${ly}" r="13" fill="${colors[p.id]}" opacity="0.2" class="cd" style="animation-delay:${ad}s"/>`;
-    svg+=`<circle cx="${lx}" cy="${ly}" r="12" fill="none" stroke="${colors[p.id]}" stroke-width="1.5" class="cd" style="animation-delay:${ad}s"/>`;
-    if(photo){
-      svg+=`<image href="${photo}" x="${lx-11}" y="${ly-11}" width="22" height="22" clip-path="url(#${uid})" preserveAspectRatio="xMidYMid slice" class="cd" style="animation-delay:${ad}s"/>`;
-    }else{
-      svg+=`<text x="${lx}" y="${ly+4}" text-anchor="middle" font-size="12" class="cd" style="animation-delay:${ad}s">${p.emoji}</text>`;
-    }
+    svg+=`<polyline points="${points}" fill="none" stroke="${p.color}" stroke-width="4" opacity="0.1" class="cl" style="animation-delay:${delay}s"/>`;
+    svg+=`<polyline points="${points}" fill="none" stroke="${p.color}" stroke-width="2" opacity="0.85" class="cl" style="animation-delay:${delay}s"/>`;
+    // Only dot at last point
+    const lastV=pts[pts.length-1];
+    const dd=(pi*0.12+1.2).toFixed(2);
+    svg+=`<circle cx="${idx2x(displaySnapshots.length-1)}" cy="${pts2y(lastV)}" r="4" fill="${p.color}" stroke="#0a1628" stroke-width="1.5" class="cd" style="animation-delay:${dd}s"/>`;
   });
   svg+=`</svg>`;
 
-  el.innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:rgba(255,255,255,0.85);">Race por el título 🏆</div>
-      ${isDemoMode?`<div style="font-size:10px;font-weight:700;color:rgba(250,204,21,0.7);background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);border-radius:8px;padding:4px 8px;">Vista previa</div>`:''}
-    </div>
-    ${isDemoMode?`<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Se actualizará con datos reales cuando haya partidos terminados.</div>`:''}
-    <div style="overflow-x:auto;">${svg}</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">
-      ${PLAYERS.map(p=>`<div style="display:flex;align-items:center;gap:4px;font-size:11px;">
-        <div style="width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0;"></div>
-        ${p.name}
-      </div>`).join('')}
+  // Right side: ranked list of players
+  const legendH=H;
+  const rowH=legendH/ranked.length;
+  let legend=`<div style="display:flex;flex-direction:column;justify-content:space-between;height:${H}px;padding:${PAD.t}px 0 ${PAD.b}px;gap:2px;">`;
+  ranked.forEach((p,i)=>{
+    const photo=getPhoto(p.id);
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    legend+=`<div style="display:flex;align-items:center;gap:4px;flex:1;min-height:0;">
+      <div style="width:3px;height:100%;background:${p.color};border-radius:2px;flex-shrink:0;"></div>
+      ${photo
+        ?`<img src="${photo}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;border:1.5px solid ${p.color};flex-shrink:0;"/>`
+        :`<div style="width:18px;height:18px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">${p.emoji}</div>`
+      }
+      <span style="font-size:9px;color:rgba(255,255,255,0.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">${p.name.split(' ')[0]}</span>
+      <span style="font-size:9px;font-weight:800;color:${p.color};flex-shrink:0;">${p.pts}</span>
     </div>`;
+  });
+  legend+=`</div>`;
+
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:rgba(255,255,255,0.85);">Race por el título 🏆</div>
+      ${isDemoMode?`<div style="font-size:10px;font-weight:700;color:rgba(250,204,21,0.7);background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);border-radius:8px;padding:3px 7px;">Vista previa</div>`:''}
+    </div>
+    ${isDemoMode?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Se actualizará con datos reales.</div>`:''}
+    <div style="display:flex;gap:8px;align-items:flex-start;">${svg}${legend}</div>`;
 }
+
 
 // MUNDIAL TABLE
 function renderMundial(){

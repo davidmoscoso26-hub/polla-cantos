@@ -1885,20 +1885,23 @@ function renderGroups(){
     // Points summary if classifieds declared
     const cl=S.classifieds[g.id];
     let ptsSummary='';
-    if(cl&&cl.length>0&&picks.length>0){
-      const classified3=picks.slice(0,3).filter(t=>cl.includes(t)).length;
+    if(cl&&cl.length>=2&&picks.length>=3){
+      const myTop3=picks.slice(0,3);
+      const classified3=myTop3.filter(t=>cl.includes(t)).length;
       const exactOrder=picks.length===4&&cl.length===4&&picks.every((t,i)=>cl[i]===t);
       const grpPts=classified3*3+(exactOrder?4:0);
+      const declaredAll=cl.length===4;
       if(grpPts>0){
-        const exactBadge=exactOrder?' <span style="color:#facc15;">+4 orden exacto 🎯</span>':'';
-        ptsSummary='<div style="font-size:10px;font-weight:700;color:var(--g);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);border-radius:8px;padding:5px 8px;margin-top:6px;">✅ '+classified3+'/3 clasificados = '+grpPts+' pts'+exactBadge+'</div>';
-      }else if(cl.length===4){
-        ptsSummary='<div style="font-size:10px;color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:5px 8px;margin-top:6px;">0 pts en este grupo</div>';
+        let txt='✅ '+classified3+'/3 acertados = <b>'+grpPts+' pts</b>';
+        if(exactOrder)txt+=' <span style="color:#facc15;">+4 orden exacto 🎯</span>';
+        else if(!declaredAll)txt+=' <span style="color:rgba(255,255,255,0.3);">(pendiente 3ro/4to)</span>';
+        ptsSummary='<div style="font-size:11px;font-weight:600;color:var(--g);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:6px 10px;margin-top:6px;">'+txt+'</div>';
+      }else if(declaredAll){
+        ptsSummary='<div style="font-size:11px;color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:6px 10px;margin-top:6px;">❌ 0 pts en este grupo</div>';
       }
     }
     return `<div class="gcard">
       <div class="gtitle">Group ${g.id}<span class="gtitle-badge" style="color:${badgeColor};">${lockedCount}/3 in</span></div>
-      <div style="font-size:9px;color:var(--muted);margin-bottom:7px;">Tap teams in order · Top 3 = 3 pts each if they qualify (1st, 2nd or best 3rd)</div>
       ${teams}
       ${ptsSummary}
     </div>`;

@@ -1007,7 +1007,7 @@ function initApp(){
   }
   document.getElementById('surl').textContent=window.location.href;
   const pcEl=document.getElementById('player-count');if(pcEl)pcEl.textContent=PLAYERS.length;
-  renderNextBanner();updateCountdown();
+  renderNextBanner();updateCountdown();showBracketReminder();
   setInterval(updateCountdown,60000);
   setInterval(updateNextMatchChip,1000);
   // countdown started in boot
@@ -1016,7 +1016,7 @@ function initApp(){
 
 
 const BRACKET_ROUNDS=[
-  {id:'r32', label:'Round of 32', pts:3, unlock:new Date('2026-06-27T00:00:00-05:00'),
+  {id:'r32', label:'Round of 32', pts:3, unlock:new Date('2026-06-27T00:01:00-05:00'),
    matches:[
     {id:'br001',h:'1ro Gr.A',a:'2do Gr.B'},{id:'br002',h:'1ro Gr.C',a:'2do Gr.D'},
     {id:'br003',h:'1ro Gr.E',a:'2do Gr.F'},{id:'br004',h:'1ro Gr.G',a:'2do Gr.H'},
@@ -1057,16 +1057,23 @@ function getBracketTeam(mid){
 }
 
 function resolveBracketLabel(label){
-  // Try to resolve from classifieds
   if(label.includes('Gr.')){
-    const grp=label.slice(-1);
+    // Extract group letter (last char) and position
+    const grp=label.match(/Gr\.([A-L])/)?.[1];
     const pos=label.includes('1ro')?0:1;
-    const cl=S.classifieds[grp];
-    if(cl&&cl[pos]){
-      const g=GROUPS.find(x=>x.id===grp);
-      const t=g&&g.teams.find(x=>x.n===cl[pos]);
-      if(t)return t.f+' '+t.n;
+    if(grp){
+      const cl=S.classifieds[grp];
+      if(cl&&cl[pos]){
+        const g=GROUPS.find(x=>x.id===grp);
+        const t=g&&g.teams.find(x=>x.n===cl[pos]);
+        if(t)return t.f+' '+t.n;
+        return cl[pos];
+      }
     }
+  }
+  if(label.includes('3ro mejor')){
+    // Best third place - show as generic for now
+    return label;
   }
   if(label.includes('Gan.')){
     const mid=label.replace('Gan.','').trim();
@@ -1235,16 +1242,23 @@ function calcPts(pid){
     if(p.h===res.h&&p.a===res.a){pts+=5;exact++;const all=PLAYERS.map(pl=>(S.preds[pl.id]||{})[mid]).filter(Boolean);if(all.filter(x=>x.h===p.h&&x.a===p.a).length===1)pts+=2;}
     else{const pw=p.h>p.a?'h':p.h<p.a?'a':'d';const rw=res.h>res.a?'h':res.h<res.a?'a':'d';if(pw===rw){pts+=2;wins++;}}
   });
-  // Group picks points (if admin declared classifieds)
-  // 3 pts per correct classified team, no order bonus
+  // Group picks points
+  // 3 pts per correct classified team in top 3
+  // +4 pts bonus if all 4 teams in exact order
   if(S.classifieds&&Object.keys(S.classifieds).length>0){
     const picks=S.grpicks[pid]||{};
     Object.keys(S.classifieds).forEach(gid=>{
       const cl=S.classifieds[gid];if(!cl)return;
-      const userPicks=(picks[gid]||[]).slice(0,3);// top 3 picks
-      userPicks.forEach(team=>{
+      const userPicks=picks[gid]||[];
+      // 3 pts per classified team in top 3
+      userPicks.slice(0,3).forEach(team=>{
         if(cl.includes(team))pts+=3;
       });
+      // +4 pts if all 4 in exact order
+      if(userPicks.length===4&&cl.length===4){
+        const exactOrder=userPicks.every((t,i)=>cl[i]===t);
+        if(exactOrder)pts+=4;
+      }
     });
   }
   // Bracket points
@@ -1565,7 +1579,8 @@ window.showHelp=function(){
       ⭐ Exact score → <b style="color:#facc15;">5 pts</b><br>
       💜 Unique score (only you picked it) → <b style="color:#c084fc;">+2 pts extra</b><br><br>
       <b style="color:#fff;">📋 Group stage picks</b><br>
-      Rank each group in order. If a team in your <b style="color:var(--g);">top 3</b> advances → <b style="color:var(--g);">3 pts</b>, no matter how they qualify.<br><br>
+      Rank each group in order. If a team in your <b style="color:var(--g);">top 3</b> advances → <b style="color:var(--g);">3 pts</b> each.<br>
+      If all 4 teams finish in your exact order → <b style="color:#facc15;">+4 pts</b> bonus.<br><br>
       <b style="color:#fff;">🏟️ Knockout bracket</b><br>
       R32 → 3 · Round of 16 → 5 · Quarters → 7<br>
       Semis → 10 · Finalist → 12 · 🏆 Champion → 15 pts<br><br>
@@ -1867,10 +1882,25 @@ function renderGroups(){
     }).join('');
     const lockedCount=picks.filter((t,i)=>i<3&&t).length;
     const badgeColor=lockedCount===3?'var(--g)':lockedCount>0?'#f59e0b':'rgba(255,255,255,0.25)';
+    // Points summary if classifieds declared
+    const cl=S.classifieds[g.id];
+    let ptsSummary='';
+    if(cl&&cl.length>0&&picks.length>0){
+      const classified3=picks.slice(0,3).filter(t=>cl.includes(t)).length;
+      const exactOrder=picks.length===4&&cl.length===4&&picks.every((t,i)=>cl[i]===t);
+      const grpPts=classified3*3+(exactOrder?4:0);
+      if(grpPts>0){
+        const exactBadge=exactOrder?' <span style="color:#facc15;">+4 orden exacto 🎯</span>':'';
+        ptsSummary='<div style="font-size:10px;font-weight:700;color:var(--g);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15);border-radius:8px;padding:5px 8px;margin-top:6px;">✅ '+classified3+'/3 clasificados = '+grpPts+' pts'+exactBadge+'</div>';
+      }else if(cl.length===4){
+        ptsSummary='<div style="font-size:10px;color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:5px 8px;margin-top:6px;">0 pts en este grupo</div>';
+      }
+    }
     return `<div class="gcard">
       <div class="gtitle">Group ${g.id}<span class="gtitle-badge" style="color:${badgeColor};">${lockedCount}/3 in</span></div>
       <div style="font-size:9px;color:var(--muted);margin-bottom:7px;">Tap teams in order · Top 3 = 3 pts each if they qualify (1st, 2nd or best 3rd)</div>
       ${teams}
+      ${ptsSummary}
     </div>`;
   }).join('');
   renderConfirmButtons();
@@ -2442,26 +2472,37 @@ function renderAdminClassifieds(){
   const el=document.getElementById('admin-classifieds-grid');if(!el)return;
   el.innerHTML=GROUPS.map(g=>{
     const cl=S.classifieds[g.id]||[];
+    const posColors=['var(--g)','#818cf8','#f59e0b','rgba(255,255,255,0.2)'];
+    const posLabels=['1ro','2do','3ro','4to'];
     const teams=g.teams.map(t=>{
       const idx=cl.indexOf(t.n);
-      const cls=idx===0?'p1':idx===1?'p2':'';
-      const lbl=idx===0?'1':idx===1?'2':'';
-      return `<div class="gteam" onclick="toggleClassified('${g.id}','${t.n}')">
-        <span class="gtflag">${t.f}</span><span class="gtname">${t.n}</span>
-        <div class="pdot ${cls}">${lbl}</div>
-      </div>`;
+      const assigned=idx>=0;
+      const color=assigned?posColors[idx]:'rgba(255,255,255,0.15)';
+      const lbl=assigned?posLabels[idx]:'';
+      return '<div class="gteam cl4-btn" data-gid="'+g.id+'" data-tname="'+t.n+'">'+
+        '<span class="gtflag">'+t.f+'</span><span class="gtname">'+t.n+'</span>'+
+        '<div style="font-size:10px;font-weight:800;color:'+color+';min-width:24px;text-align:right;">'+lbl+'</div>'+
+      '</div>';
     }).join('');
-    return `<div class="gcard"><div class="gtitle">Grupo ${g.id}<span class="gtitle-badge">${cl.length}/2</span></div>${teams}</div>`;
+    const done=cl.length===4;
+    return '<div class="gcard"><div class="gtitle">Grupo '+g.id+'<span class="gtitle-badge" style="color:'+(done?'var(--g)':'rgba(255,255,255,0.3)')+';">'+(done?'✓':cl.length+'/4')+'</span></div>'+teams+'</div>';
   }).join('');
 }
-window.toggleClassified=async function(gid,tname){
+document.addEventListener('click',function(e){
+  const btn=e.target.closest('.cl4-btn');
+  if(!btn||!btn.dataset.gid)return;
+  toggleClassified4(btn.dataset.gid,btn.dataset.tname);
+});
+window.toggleClassified4=async function(gid,tname){
   const cl=[...(S.classifieds[gid]||[])];
   const idx=cl.indexOf(tname);
-  if(idx>=0)cl.splice(idx,1);else if(cl.length<2)cl.push(tname);else{cl.shift();cl.push(tname);}
+  if(idx>=0)cl.splice(idx,1);
+  else if(cl.length<4)cl.push(tname);
+  else{cl.shift();cl.push(tname);}
   S.classifieds[gid]=cl;
   await sbUpdate('admin_config','key=eq.classified_'+gid,{key:'classified_'+gid,value:JSON.stringify(cl)});
-  renderAdminClassifieds();renderRanking();
-  toast('✅ Clasificados Grupo '+gid+' guardados');
+  renderAdminClassifieds();renderBracketSketch();renderBracketContent();renderRanking();
+  toast('✅ Grupo '+gid+' actualizado: '+cl.join(' > '));
 };
 
 function renderPinsList(){

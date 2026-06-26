@@ -956,7 +956,7 @@ window.doLogin=function(){
     document.getElementById('login-screen').style.display='none';
     document.getElementById('main-app').style.display='block';
     initApp();
-    renderRanking();
+    requestAnimationFrame(()=>requestAnimationFrame(()=>renderRanking()));
   }else{
     document.getElementById('pin-err').textContent='PIN incorrecto';
     ['p0','p1','p2','p3'].forEach(id=>document.getElementById(id).value='');
@@ -1054,6 +1054,15 @@ function getBracketTeam(mid){
   const res=S.bracketResults[mid];
   if(res)return res;
   return null;
+}
+
+function completePicks(gid, picks){
+  // If user picked 3 teams, infer the 4th as the remaining one
+  if(picks.length>=4)return picks.slice(0,4);
+  const g=GROUPS.find(x=>x.id===gid);
+  if(!g)return picks;
+  const remaining=g.teams.map(t=>t.n).filter(n=>!picks.includes(n));
+  return [...picks, ...remaining].slice(0,4);
 }
 
 function resolveBracketLabel(label){
@@ -1254,9 +1263,10 @@ function calcPts(pid){
       userPicks.slice(0,3).forEach(team=>{
         if(cl.includes(team))pts+=3;
       });
-      // +4 pts if all 4 in exact order
-      if(userPicks.length===4&&cl.length===4){
-        const exactOrder=userPicks.every((t,i)=>cl[i]===t);
+      // +4 pts if all 4 in exact order (infer 4th if not explicitly picked)
+      if(cl.length===4&&userPicks.length>=3){
+        const completed=completePicks(gid,userPicks);
+        const exactOrder=completed.length===4&&completed.every((t,i)=>cl[i]===t);
         if(exactOrder)pts+=4;
       }
     });
@@ -1888,7 +1898,8 @@ function renderGroups(){
     if(cl&&cl.length>=2&&picks.length>=3){
       const myTop3=picks.slice(0,3);
       const classified3=myTop3.filter(t=>cl.includes(t)).length;
-      const exactOrder=picks.length===4&&cl.length===4&&picks.every((t,i)=>cl[i]===t);
+      const completedPicks=completePicks(g.id,myTop3.length>=3?picks:myTop3);
+      const exactOrder=cl.length===4&&picks.length>=3&&completedPicks.every((t,i)=>cl[i]===t);
       const grpPts=classified3*3+(exactOrder?4:0);
       const declaredAll=cl.length===4;
       if(grpPts>0){
@@ -2598,7 +2609,7 @@ async function boot(){
     document.getElementById('login-screen').style.display='none';
     document.getElementById('main-app').style.display='block';
     initApp();
-    renderRanking();
+    requestAnimationFrame(()=>requestAnimationFrame(()=>renderRanking()));
   }
 }
 boot();

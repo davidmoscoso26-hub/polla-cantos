@@ -1148,33 +1148,52 @@ window.saveBracketPick=async function(mid,team){
 
 window.renderBracketSketch=function(){
   const el=document.getElementById('bracket-sketch');if(!el)return;
-  const matches=[
-    {n:1,hg:'A',hp:0,ag:'B',ap:1},{n:2,hg:'C',hp:0,ag:'D',ap:1},
-    {n:3,hg:'E',hp:0,ag:'F',ap:1},{n:4,hg:'G',hp:0,ag:'H',ap:1},
-    {n:5,hg:'I',hp:0,ag:'J',ap:1},{n:6,hg:'K',hp:0,ag:'L',ap:1},
-    {n:7,hg:'B',hp:0,ag:'A',ap:1},{n:8,hg:'D',hp:0,ag:'C',ap:1},
-    {n:9,hg:'F',hp:0,ag:'E',ap:1},{n:10,hg:'H',hp:0,ag:'G',ap:1},
-    {n:11,hg:'J',hp:0,ag:'I',ap:1},{n:12,hg:'L',hp:0,ag:'K',ap:1},
-  ];
-  function resolve(grp,pos){
-    const cl=S.classifieds[grp];
-    if(cl&&cl[pos]){
-      const g=GROUPS.find(x=>x.id===grp);
-      const t=g&&g.teams.find(x=>x.n===cl[pos]);
-      if(t)return {name:t.n,flag:t.f,known:true};
+  // Official R32 matchups - use BRACKET_ROUNDS as source of truth
+  function resolveLabel(label){
+    if(label.startsWith('1ro Gr.')||label.startsWith('2do Gr.')){
+      const grp=label.match(/Gr\.([A-L])/)?.[1];
+      const pos=label.startsWith('1ro')?0:1;
+      if(grp){
+        const cl=S.classifieds[grp];
+        if(cl&&cl[pos]){
+          const g=GROUPS.find(x=>x.id===grp);
+          const t=g&&g.teams.find(x=>x.n===cl[pos]);
+          if(t)return{name:t.n,flag:t.f,known:true};
+          return{name:cl[pos],flag:'🏳',known:true};
+        }
+      }
+      return{name:label,flag:'🏳',known:false};
     }
-    return {name:(pos===0?'1ro':'2do')+' Gr.'+grp,flag:'🏳',known:false};
+    if(label.startsWith('3ro Gr.'))return{name:'3ro mejor (TBD)',flag:'❓',known:false};
+    return{name:label,flag:'🏳',known:false};
   }
-  const note=`<div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6;background:rgba(255,255,255,0.02);border-radius:8px;padding:8px 10px;">Se actualizan automáticamente cuando el admin declare los clasificados de cada grupo.</div>`;
-  el.innerHTML=note+matches.map(m=>{
-    const h=resolve(m.hg,m.hp);const a=resolve(m.ag,m.ap);
-    const known=h.known&&a.known;
-    return `<div style="display:grid;grid-template-columns:1fr 32px 1fr;align-items:center;gap:6px;padding:9px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,${known?'0.1':'0.06'});border-radius:10px;margin-bottom:5px;">
-      <div style="font-size:12px;font-weight:${h.known?'700':'400'};color:${h.known?'var(--text)':'var(--muted)'};">${h.flag} ${h.name}</div>
-      <div style="font-size:9px;color:rgba(255,255,255,0.2);font-weight:800;text-align:center;background:rgba(255,255,255,0.05);padding:3px 4px;border-radius:5px;">VS</div>
-      <div style="font-size:12px;font-weight:${a.known?'700':'400'};color:${a.known?'var(--text)':'var(--muted)'};text-align:right;">${a.name} ${a.flag}</div>
-    </div>`;
-  }).join('');
+  const r32=BRACKET_ROUNDS.find(r=>r.id==='r32');
+  if(!r32){el.innerHTML='';return;}
+  const note='<div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6;background:rgba(255,255,255,0.02);border-radius:8px;padding:8px 10px;">Se actualizan automáticamente cuando el admin declare los clasificados de cada grupo.</div>';
+  // Group by date
+  const byDate={};
+  r32.matches.forEach(m=>{
+    const d=m.dt||'';
+    if(!byDate[d])byDate[d]=[];
+    byDate[d].push(m);
+  });
+  let html=note;
+  Object.keys(byDate).sort().forEach(dt=>{
+    const label=dt?new Date(dt+'T12:00:00-05:00').toLocaleDateString('es-EC',{weekday:'short',day:'numeric',month:'short'}):'';
+    html+='<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;margin:10px 0 5px;">'+label+'</div>';
+    byDate[dt].forEach(m=>{
+      const h=resolveLabel(m.h);const a=resolveLabel(m.a);
+      const result=S.bracketResults[m.id];
+      const known=h.known&&a.known;
+      const timeLbl=m.tm?' · '+m.tm+' EC':'';
+      html+='<div style="display:grid;grid-template-columns:1fr 32px 1fr;align-items:center;gap:6px;padding:9px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,'+(known?'0.12':'0.06')+');border-radius:10px;margin-bottom:5px;">'
+        +'<div style="font-size:12px;font-weight:'+(h.known?'700':'400')+';color:'+(h.known?'var(--text)':'var(--muted)')+';">'+h.flag+' '+h.name+'</div>'
+        +'<div style="font-size:9px;color:rgba(255,255,255,0.2);font-weight:800;text-align:center;background:rgba(255,255,255,0.05);padding:3px 4px;border-radius:5px;">'+(result?result.split(' ')[0]:'VS')+'</div>'
+        +'<div style="font-size:12px;font-weight:'+(a.known?'700':'400')+';color:'+(a.known?'var(--text)':'var(--muted)')+';text-align:right;">'+a.name+' '+a.flag+'</div>'
+        +'</div>';
+    });
+  });
+  el.innerHTML=html;
 };
 
 window.nav=function(id){

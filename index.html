@@ -1007,7 +1007,7 @@ function initApp(){
   }
   document.getElementById('surl').textContent=window.location.href;
   const pcEl=document.getElementById('player-count');if(pcEl)pcEl.textContent=PLAYERS.length;
-  renderNextBanner();updateCountdown();showBracketReminder();
+  renderNextBanner();updateCountdown();if(typeof showBracketReminder==="function")showBracketReminder();
   setInterval(updateCountdown,60000);
   setInterval(updateNextMatchChip,1000);
   // countdown started in boot
@@ -2592,6 +2592,26 @@ window.saveMyPhoto=async function(){
 window.copyLink=function(){navigator.clipboard.writeText(window.location.href).then(()=>toast('✅ Link copiado!')).catch(()=>toast('Copia: '+window.location.href));};
 
 // BOOT
+window.dismissBracketReminder=function(){
+  const el=document.getElementById('bracket-reminder');
+  if(el)el.style.display='none';
+  localStorage.setItem('bracket_reminder_'+new Date().toDateString(),'1');
+};
+
+function showBracketReminder(){
+  if(S.isVisitor)return;
+  const now=new Date();
+  const bracketStart=new Date('2026-06-27T00:01:00-05:00');
+  const bracketEnd=new Date('2026-07-03T23:59:00-05:00');
+  if(now<bracketStart||now>bracketEnd)return;
+  const key='bracket_reminder_'+now.toDateString();
+  if(localStorage.getItem(key))return;
+  const myPicks=S.bracketPicks[S.curUser]||{};
+  if(Object.keys(myPicks).length>=8)return;
+  const el=document.getElementById('bracket-reminder');
+  if(el)el.style.display='flex';
+}
+
 async function boot(){
   updateTournamentCountdown();
   setInterval(updateTournamentCountdown,1000);

@@ -1018,14 +1018,22 @@ function initApp(){
 const BRACKET_ROUNDS=[
   {id:'r32', label:'Round of 32', pts:3, unlock:new Date('2026-06-27T00:01:00-05:00'),
    matches:[
-    {id:'br001',h:'1ro Gr.A',a:'2do Gr.B'},{id:'br002',h:'1ro Gr.C',a:'2do Gr.D'},
-    {id:'br003',h:'1ro Gr.E',a:'2do Gr.F'},{id:'br004',h:'1ro Gr.G',a:'2do Gr.H'},
-    {id:'br005',h:'1ro Gr.I',a:'2do Gr.J'},{id:'br006',h:'1ro Gr.K',a:'2do Gr.L'},
-    {id:'br007',h:'1ro Gr.B',a:'2do Gr.A'},{id:'br008',h:'1ro Gr.D',a:'2do Gr.C'},
-    {id:'br009',h:'1ro Gr.F',a:'2do Gr.E'},{id:'br010',h:'1ro Gr.H',a:'2do Gr.G'},
-    {id:'br011',h:'1ro Gr.J',a:'2do Gr.I'},{id:'br012',h:'1ro Gr.L',a:'2do Gr.K'},
-    {id:'br013',h:'3ro mejor-1',a:'3ro mejor-2'},{id:'br014',h:'3ro mejor-3',a:'3ro mejor-4'},
-    {id:'br015',h:'3ro mejor-5',a:'3ro mejor-6'},{id:'br016',h:'3ro mejor-7',a:'3ro mejor-8'},
+    {id:'br073',h:'1ro Gr.A',a:'2do Gr.B',dt:'2026-06-28',tm:'19:00'},
+    {id:'br076',h:'1ro Gr.C',a:'2do Gr.F',dt:'2026-06-29',tm:'17:00'},
+    {id:'br074',h:'1ro Gr.E',a:'3ro Gr.ABCDF',dt:'2026-06-29',tm:'20:30'},
+    {id:'br075',h:'1ro Gr.F',a:'2do Gr.E',dt:'2026-06-30',tm:'01:00'},
+    {id:'br078',h:'1ro Gr.D',a:'2do Gr.I',dt:'2026-06-30',tm:'17:00'},
+    {id:'br077',h:'1ro Gr.I',a:'3ro Gr.CDFGH',dt:'2026-06-30',tm:'21:00'},
+    {id:'br079',h:'1ro Gr.A2',a:'3ro Gr.CEFHI',dt:'2026-07-01',tm:'01:00'},
+    {id:'br080',h:'1ro Gr.L',a:'3ro Gr.EHIJK',dt:'2026-07-01',tm:'16:00'},
+    {id:'br082',h:'1ro Gr.G',a:'3ro Gr.AEHIJ',dt:'2026-07-01',tm:'20:00'},
+    {id:'br081',h:'1ro Gr.B',a:'2do Gr.A',dt:'2026-07-02',tm:'01:00'},
+    {id:'br084',h:'1ro Gr.H',a:'2do Gr.J',dt:'2026-07-02',tm:'19:00'},
+    {id:'br085',h:'2do Gr.G',a:'2do Gr.H',dt:'2026-07-02',tm:'23:00'},
+    {id:'br083',h:'2do Gr.K',a:'2do Gr.L',dt:'2026-07-03',tm:'01:00'},
+    {id:'br086',h:'1ro Gr.J',a:'2do Gr.K2',dt:'2026-07-03',tm:'16:00'},
+    {id:'br087',h:'1ro Gr.K',a:'3ro Gr.ABDFG',dt:'2026-07-03',tm:'20:00'},
+    {id:'br088',h:'2do Gr.C',a:'2do Gr.D',dt:'2026-07-03',tm:'23:00'},
   ]},
   {id:'r16', label:'Octavos de final', pts:5, unlock:new Date('2026-07-05T00:00:00-05:00'),
    matches:[
@@ -1066,10 +1074,9 @@ function completePicks(gid, picks){
 }
 
 function resolveBracketLabel(label){
-  if(label.includes('Gr.')){
-    // Extract group letter (last char) and position
+  if(label.startsWith('1ro Gr.')||label.startsWith('2do Gr.')){
     const grp=label.match(/Gr\.([A-L])/)?.[1];
-    const pos=label.includes('1ro')?0:1;
+    const pos=label.startsWith('1ro')?0:1;
     if(grp){
       const cl=S.classifieds[grp];
       if(cl&&cl[pos]){
@@ -1079,10 +1086,10 @@ function resolveBracketLabel(label){
         return cl[pos];
       }
     }
-  }
-  if(label.includes('3ro mejor')){
-    // Best third place - show as generic for now
     return label;
+  }
+  if(label.startsWith('3ro Gr.')){
+    return '3ro mejor (TBD)';
   }
   if(label.includes('Gan.')){
     const mid=label.replace('Gan.','').trim();

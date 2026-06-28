@@ -1309,19 +1309,38 @@ function renderBracketCuadro(){
   const r8=BRACKET_ROUNDS.find(r=>r.id==='r8').matches;
   const r4=BRACKET_ROUNDS.find(r=>r.id==='r4').matches;
   const fin=BRACKET_ROUNDS.find(r=>r.id==='r2').matches;
+  const myPicks=S.bracketPicks[S.curUser]||{};
+
+  // Cuadro-specific resolver: uses user's picks to propagate through the tree
+  function cuadroResolve(label){
+    if(typeof label==='object'&&label.n)return label;
+    if(typeof label==='string'&&label.startsWith('Gan.')){
+      const srcId=label.replace('Gan.','');
+      // Admin result takes priority, then user pick
+      const winner=S.bracketResults[srcId]||myPicks[srcId];
+      if(winner){
+        const parts=winner.split(' ');
+        return {f:parts[0], n:parts.slice(1).join(' ')};
+      }
+    }
+    return null;
+  }
+  function cuadroTeams(m){
+    return {h:cuadroResolve(m.h), a:cuadroResolve(m.a)};
+  }
 
   // Left side = first half of each round, right side = second half
   // R32: 16 matches -> left 8, right 8
   const locked=isBracketLocked();
   function pickVal(m,isH){
-    const teams=getBracketMatchTeams(m);
+    const teams=cuadroTeams(m);
     if(typeof m[isH?'h':'a']==='object')return m[isH?'h':'a'].f+' '+m[isH?'h':'a'].n;
     const t=isH?teams.h:teams.a;
     return t?t.f+' '+t.n:null;
   }
   function cell(m,compact){
     if(!m)return '<div style="height:'+(compact?34:40)+'px;"></div>';
-    const teams=getBracketMatchTeams(m);
+    const teams=cuadroTeams(m);
     const hName=typeof m.h==='object'?m.h.n:(teams.h?teams.h.n:null);
     const aName=typeof m.a==='object'?m.a.n:(teams.a?teams.a.n:null);
     const hFlag=typeof m.h==='object'?m.h.f:(teams.h?teams.h.f:'❓');
@@ -1898,27 +1917,22 @@ function getMatchDisplay(m){
 }
 
 function buildMatchCard(m,showInputs){
-  // Bracket match (R32, R16, etc) - no score prediction, show bracket winner
+  // Bracket match (R32, R16, etc) - show like a regular match, no score inputs
   if(m.rd||m.isBracket){
     const bracketWinner=S.bracketResults[m.id];
-    const userPick=(S.bracketPicks[S.curUser]||{})[m.id];
     const started=m.dt&&m.tm&&matchLocked(m);
-    const rdLabel={R32:'R32','r16':'Octavos','r8':'Cuartos','r4':'Semis','r3':'3er Puesto','r2':'Final'}[m.rd||m.isBracket]||m.rd||'Bracket';
     const timeStr=m.tm?m.tm+' EC':'Por confirmar';
     const centerBlock=bracketWinner
-      ?`<div class="rscore" style="font-size:13px;">${bracketWinner.split(' ')[0]}</div>`
+      ?`<div class="rscore" style="font-size:18px;">${bracketWinner.split(' ')[0]}</div>`
       :started
         ?`<div style="font-size:11px;color:rgba(255,255,255,0.2);font-weight:700;display:flex;align-items:center;gap:3px;"><span class="live-dot"></span>EN JUEGO</div>`
         :`<div class="vstxt">VS</div>`;
-    const pickChip=userPick&&!bracketWinner?`<div style="font-size:10px;text-align:center;color:var(--g);margin-top:6px;">Tu pick: <b>${userPick.split(' ').slice(1).join(' ')}</b> 🎯</div>`
-      :bracketWinner&&userPick?`<div style="font-size:10px;text-align:center;color:${userPick===bracketWinner?'var(--g)':'#f87171'};margin-top:6px;">${userPick===bracketWinner?'✅ Acertaste!':'❌ Tu pick: '+userPick.split(' ').slice(1).join(' ')}</div>`:'';
-    return `<div class="mc" style="border-color:rgba(99,102,241,0.2);">
+    return `<div class="mc ${bracketWinner?'mc-done':''}">
       <div class="mteams">
         <div class="tb"><div class="tflag">${m.h.f}</div><div class="tname">${m.h.n}</div></div>
         <div class="vsb">${centerBlock}<div class="mtime">${timeStr}</div><div class="mgrp" style="color:#818cf8;">R32</div></div>
         <div class="tb"><div class="tflag">${m.a.f}</div><div class="tname">${m.a.n}</div></div>
       </div>
-      ${pickChip}
     </div>`;
   }
 

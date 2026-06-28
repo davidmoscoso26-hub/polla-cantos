@@ -416,9 +416,9 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
   <div class="nav">
     <button class="nbtn on" onclick="nav('tabla')" id="nav-tabla"><span class="ni">🏆</span>Table</button>
     <button class="nbtn" onclick="nav('partidos')" id="nav-partidos"><span class="ni">⚽</span>Matches</button>
-    <button class="nbtn" onclick="nav('picks')" id="nav-picks"><span class="ni">🎯</span>Picks</button>
     <button class="nbtn" onclick="nav('mundial')" id="nav-mundial"><span class="ni">🌍</span>World Cup</button>
     <button class="nbtn" onclick="nav('bracket')" id="nav-bracket"><span class="ni">🏟️</span>Bracket</button>
+    <button class="nbtn" onclick="nav('picks')" id="nav-picks"><span class="ni">🎯</span>Picks</button>
     <button class="nbtn" onclick="nav('admin')" id="nav-admin"><span class="ni">⚙️</span>Admin</button>
   </div>
 
@@ -547,11 +547,12 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
   <!-- MUNDIAL -->
   <div class="section" id="section-mundial">
     <div style="display:flex;gap:6px;margin-bottom:14px;">
-      <div id="mundial-tab-btn" onclick="switchMundialTab('mundial')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🌍 Grupos</div>
+      <div id="playoff-tab-btn" onclick="switchMundialTab('playoff')" style="flex:1;padding:9px;border-radius:10px;background:rgba(250,204,21,0.15);border:1px solid rgba(250,204,21,0.3);color:#facc15;font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🏟️ Bracket</div>
+      <div id="mundial-tab-btn" onclick="switchMundialTab('mundial')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🌍 Grupos</div>
       <div id="stats-tab-btn" onclick="switchMundialTab('stats')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">📊 Stats</div>
-      <div id="carrera-tab-btn" onclick="switchMundialTab('carrera')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🏆 Race</div>
     </div>
     <div id="mundial-tab-content">
+    <div id="playoff-tab-content" style="display:none;"></div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Se actualiza cuando el admin carga los resultados.</div>
       <div class="mundial-grid" id="mundial-grid"><div class="loading"><div class="spinner"></div><p style="font-size:13px;color:var(--muted);">Calculando...</p></div></div>
     </div>
@@ -679,7 +680,7 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
   <div style="background:linear-gradient(160deg,#16233a,#0e1726);border:1px solid rgba(34,197,94,0.3);border-radius:18px;padding:24px 22px;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
     <div style="font-size:38px;margin-bottom:8px;">🏟️</div>
     <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;margin-bottom:8px;color:#fff;">¡No olvides tu bracket!</div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;margin-bottom:18px;">Llena tus predicciones de toda la fase eliminatoria, desde dieciseisavos hasta la final. Tienes hasta el <b style="color:var(--g);">domingo 29 jun a las 12pm</b>. ¡Hay más de 150 puntos en juego!</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;margin-bottom:18px;">Llena tus predicciones de toda la fase eliminatoria, desde dieciseisavos hasta la final. Tienes hasta el <b style="color:var(--g);">lunes 29 jun a las 11:59am</b>. ¡Hay más de 150 puntos en juego!</div>
     <button onclick="dismissBracketReminder(true)" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--g);color:#06210f;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;margin-bottom:8px;">Llenar bracket 🎯</button>
     <button onclick="dismissBracketReminder()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.5);font-size:12px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;">Más tarde</button>
   </div>
@@ -863,9 +864,9 @@ async function loadData(){
     Object.keys(PHOTOS_DEFAULT).forEach(k=>{if(!S.photos[k])S.photos[k]=PHOTOS_DEFAULT[k];});
     // Load bracket
     const bpicks=await sbGet('bracket_picks?select=*');
-    if(bpicks)bpicks.forEach(r=>{if(!S.bracketPicks[r.user_id])S.bracketPicks[r.user_id]={};S.bracketPicks[r.user_id][r.match_id]=r.team;});
+    if(bpicks)bpicks.forEach(r=>{if(!S.bracketPicks[r.user_id])S.bracketPicks[r.user_id]={};S.bracketPicks[r.user_id][r.match_id]=normTeam(r.team);});
     const bres=await sbGet('bracket_results?select=*');
-    if(bres)bres.forEach(r=>{S.bracketResults[r.match_id]=r.winner;});
+    if(bres)bres.forEach(r=>{S.bracketResults[r.match_id]=normTeam(r.winner);});
     // Load statuses
     const sts=await sbGet('player_status?select=*');
     if(sts)sts.forEach(r=>{const exp=new Date(r.expires_at);if(exp>new Date())S.statuses[r.user_id]={text:r.text,expires:r.expires_at};});
@@ -1036,7 +1037,7 @@ function initApp(){
 
 
 // Bracket lock: open until Monday June 29 00:00 EC (Lunes 12am)
-const BRACKET_LOCK_DT=new Date('2026-06-29T12:00:00-05:00');
+const BRACKET_LOCK_DT=new Date('2026-06-29T11:59:00-05:00');
 const isBracketLocked=()=>new Date()>=BRACKET_LOCK_DT;
 
 const BRACKET_ROUNDS=[
@@ -1098,6 +1099,8 @@ function getBracketTeam(mid){
   if(res)return res;
   return null;
 }
+
+function normTeam(s){return s?s.trim().replace(/\s+/g,' '):''}
 
 function completePicks(gid, picks){
   // If user picked 3 teams, infer the 4th as the remaining one
@@ -1219,7 +1222,7 @@ function bracketLockBanner(){
     const total2=31;
     const ptsInPlay=156;
     const fillColor=filled2>=total2?'var(--g)':'#f59e0b';
-    el.innerHTML='<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,0.7);line-height:1.65;">🏆 <b style="color:var(--g);">'+ptsInPlay+' pts</b> en juego · Llena hasta la final antes del <b style="color:var(--g);">dom 29 jun, 12pm</b> ('+(d>0?d+'d ':'')+(h%24)+'h restantes) · Llenas: <b style="color:'+fillColor+';">'+filled2+'/'+total2+'</b></div>';
+    el.innerHTML='<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,0.7);line-height:1.65;">🏆 <b style="color:var(--g);">'+ptsInPlay+' pts</b> en juego · Llena hasta la final antes del <b style="color:var(--g);">lun 29 jun, 11:59am</b> ('+(d>0?d+'d ':'')+(h%24)+'h restantes) · Llenas: <b style="color:'+fillColor+';">'+filled2+'/'+total2+'</b></div>';
   }
 }
 
@@ -1303,8 +1306,9 @@ window.saveBracketPick=async function(mid,team){
     if(matchDt&&now>=matchDt){toast('🔒 Este partido ya empezó');return;}
   }
   if(!S.bracketPicks[S.curUser])S.bracketPicks[S.curUser]={};
-  S.bracketPicks[S.curUser][mid]=team;
-  await sbUpdate('bracket_picks','user_id=eq.'+S.curUser+'&match_id=eq.'+mid,{user_id:S.curUser,match_id:mid,team});
+  const normT=normTeam(team);
+  S.bracketPicks[S.curUser][mid]=normT;
+  await sbUpdate('bracket_picks','user_id=eq.'+S.curUser+'&match_id=eq.'+mid,{user_id:S.curUser,match_id:mid,team:normT});
   if(bracketTab==='cuadro'){
     // Preserve scroll position on cuadro
     const wrap=document.querySelector('#bracket-cuadro [style*="overflow-x"]');
@@ -1321,6 +1325,7 @@ window.saveBracketPick=async function(mid,team){
 // Visual two-sided bracket
 function renderBracketCuadro(){
   const el=document.getElementById('bracket-cuadro');if(!el)return;
+  try{
   const r32=BRACKET_ROUNDS.find(r=>r.id==='r32').matches;
   const r16=BRACKET_ROUNDS.find(r=>r.id==='r16').matches;
   const r8=BRACKET_ROUNDS.find(r=>r.id==='r8').matches;
@@ -1329,7 +1334,7 @@ function renderBracketCuadro(){
   const myPicks=S.bracketPicks[S.curUser]||{};
 
   // Cuadro-specific resolver: uses user's picks to propagate through the tree
-  function cuadroResolve(label){
+  function cuadroResolve(label){try{
     if(typeof label==='object'&&label.n)return label;
     if(typeof label==='string'&&label.startsWith('Gan.')){
       const srcId=label.replace('Gan.','');
@@ -1340,7 +1345,7 @@ function renderBracketCuadro(){
         return {f:parts[0], n:parts.slice(1).join(' ')};
       }
     }
-    return null;
+    return null;}catch(e){return null;}
   }
   function cuadroTeams(m){
     return {h:cuadroResolve(m.h), a:cuadroResolve(m.a)};
@@ -1428,6 +1433,7 @@ function renderBracketCuadro(){
     +'<div style="flex:0 0 auto;">'+column(rightR32,true,'R32')+'</div>'
     +'</div></div>';
   el.innerHTML=html;
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--muted);text-align:center;">Error cargando el cuadro. Intenta de nuevo.</div>';console.error('Cuadro error:',e);}
 }
 
 document.addEventListener('click',function(e){
@@ -1456,17 +1462,24 @@ window.nav=function(id){
   if(id==='bracket'){if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();showBracketReminder();}
 
 window.switchMundialTab=function(tab){
-  ['mundial','stats','carrera'].forEach(t=>{
+  ['mundial','stats','playoff'].forEach(t=>{
     const btn=document.getElementById(t+'-tab-btn');
     const cnt=document.getElementById(t+'-tab-content');
-    if(btn){btn.style.background=tab===t?'rgba(34,197,94,0.15)':'var(--card)';btn.style.borderColor=tab===t?'rgba(34,197,94,0.3)':'var(--border)';btn.style.color=tab===t?'var(--g)':'var(--muted)';}
+    if(btn){
+      const isActive=tab===t;
+      const isPlayoff=t==='playoff';
+      btn.style.background=isActive?(isPlayoff?'rgba(250,204,21,0.15)':'rgba(34,197,94,0.15)'):'var(--card)';
+      btn.style.borderColor=isActive?(isPlayoff?'rgba(250,204,21,0.4)':'rgba(34,197,94,0.3)'):'var(--border)';
+      btn.style.color=isActive?(isPlayoff?'#facc15':'var(--g)'):'var(--muted)';
+    }
     if(cnt)cnt.style.display=tab===t?'block':'none';
   });
   if(tab==='mundial')renderMundial();
   if(tab==='stats')renderStats();
-  if(tab==='carrera')renderCarrera();
+
+  if(tab==='playoff')renderPlayoffBracket();
 };
-  if(id==='mundial'){renderMundial();}
+  if(id==='mundial'){renderPlayoffBracket();switchMundialTab('playoff');}
   if(id==='admin')initAdmin();
   if(id==='perfil')renderProfile();
 };
@@ -1550,7 +1563,7 @@ function calcPts(pid){
       round.matches.forEach(m=>{
         const result=S.bracketResults[m.id];
         const pick=bp[m.id];
-        if(result&&pick&&pick===result)pts+=round.pts;
+        if(result&&pick&&normTeam(pick)===normTeam(result))pts+=round.pts;
       });
     });
   }
@@ -2013,9 +2026,10 @@ function renderMatches(){
 
   if(q)list=list.filter(m=>m.h.n.toLowerCase().includes(q)||m.a.n.toLowerCase().includes(q));
 
-  const live=list.filter(m=>m.dt&&m.tm&&matchLocked(m)&&!S.results[m.id]?.done&&!(S.bracketResults[m.id]));
-  const done=list.filter(m=>S.results[m.id]?.done||(m.isBracket&&S.bracketResults[m.id]));
-  const next=list.filter(m=>!matchLocked(m)||(!S.results[m.id]?.done&&!S.bracketResults[m.id]&&!matchLocked(m)));
+  const isDoneM=m=>!!(S.results[m.id]?.done);
+  const live=list.filter(m=>m.dt&&m.tm&&matchLocked(m)&&!isDoneM(m));
+  const done=list.filter(m=>isDoneM(m));
+  const next=list.filter(m=>!isDoneM(m)&&!matchLocked(m));
   const recentDone=done.slice(-3).reverse();
   const olderDone=done.slice(0,-3).reverse();
 
@@ -2971,6 +2985,104 @@ function showBracketReminder(){
   sessionStorage.setItem(key,now2);
   const el=document.getElementById('bracket-reminder');
   if(el)el.style.display='flex';
+}
+
+
+function renderPlayoffBracket(){
+  const el=document.getElementById('playoff-tab-content');if(!el)return;
+  try{
+    const r32=BRACKET_ROUNDS.find(r=>r.id==='r32').matches;
+    const r16=BRACKET_ROUNDS.find(r=>r.id==='r16').matches;
+    const r8=BRACKET_ROUNDS.find(r=>r.id==='r8').matches;
+    const r4=BRACKET_ROUNDS.find(r=>r.id==='r4').matches;
+    const fin=BRACKET_ROUNDS.find(r=>r.id==='r2').matches;
+
+    // Official resolver - only uses bracketResults (admin declared)
+    function offResolve(label){
+      if(typeof label==='object'&&label.n)return label;
+      if(typeof label==='string'&&label.startsWith('Gan.')){
+        const w=S.bracketResults[label.replace('Gan.','')];
+        if(w){const p=w.split(' ');return {f:p[0],n:p.slice(1).join(' ')};}
+      }
+      return null;
+    }
+    function offTeams(m){return {h:offResolve(m.h),a:offResolve(m.a)};}
+
+    function cell(m){
+      if(!m)return '<div style="height:44px;"></div>';
+      const teams=offTeams(m);
+      const hName=typeof m.h==='object'?m.h.n:(teams.h?teams.h.n:null);
+      const aName=typeof m.a==='object'?m.a.n:(teams.a?teams.a.n:null);
+      const hFlag=typeof m.h==='object'?m.h.f:(teams.h?teams.h.f:'');
+      const aFlag=typeof m.a==='object'?m.a.f:(teams.a?teams.a.f:'');
+      const result=S.bracketResults[m.id];
+      const hWin=result&&hName&&normTeam(result).includes(hName);
+      const aWin=result&&aName&&normTeam(result).includes(aName);
+
+      function row(flag,name,won){
+        const known=!!name;
+        return '<div style="display:flex;align-items:center;gap:3px;padding:3px 5px;border-radius:4px;background:'+(won?'rgba(250,204,21,0.15)':'transparent')+';transition:background 0.2s;">'
+          +'<span style="font-size:11px;opacity:'+(known?1:0.3)+';">'+(flag||'·')+'</span>'
+          +'<span style="font-size:8.5px;font-weight:'+(won?'800':'500')+';color:'+(won?'#facc15':known?'rgba(255,255,255,0.75)':'rgba(255,255,255,0.2)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">'+(name||'·····').slice(0,11)+'</span>'
+          +(won?'<span style="font-size:8px;">🏅</span>':'')
+          +'</div>';
+      }
+
+      const borderC=result?'rgba(250,204,21,0.4)':'rgba(255,255,255,0.07)';
+      return '<div style="background:'+(result?'rgba(250,204,21,0.05)':'var(--card)')+';border:1.5px solid '+borderC+';border-radius:7px;padding:1px;width:106px;">'
+        +row(hFlag,hName,hWin)
+        +'<div style="height:1px;background:rgba(255,255,255,0.05);margin:0 3px;"></div>'
+        +row(aFlag,aName,aWin)
+        +'</div>';
+    }
+
+    function col(matches,title){
+      let h='<div style="display:flex;flex-direction:column;justify-content:space-around;gap:5px;">';
+      if(title)h+='<div style="font-size:8px;font-weight:800;color:rgba(250,204,21,0.5);text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:2px;">'+title+'</div>';
+      matches.forEach(m=>{h+=cell(m);});
+      return h+'</div>';
+    }
+
+    const leftIds32=['br074','br077','br073','br075','br083','br084','br081','br082'];
+    const rightIds32=['br076','br078','br079','br080','br086','br088','br085','br087'];
+    const leftR32=leftIds32.map(id=>r32.find(m=>m.id===id)).filter(Boolean);
+    const rightR32=rightIds32.map(id=>r32.find(m=>m.id===id)).filter(Boolean);
+    const leftR16=[r16.find(m=>m.id==='bo089'),r16.find(m=>m.id==='bo090'),r16.find(m=>m.id==='bo093'),r16.find(m=>m.id==='bo094')].filter(Boolean);
+    const rightR16=[r16.find(m=>m.id==='bo091'),r16.find(m=>m.id==='bo092'),r16.find(m=>m.id==='bo095'),r16.find(m=>m.id==='bo096')].filter(Boolean);
+    const leftR8=[r8.find(m=>m.id==='bq097'),r8.find(m=>m.id==='bq098')].filter(Boolean);
+    const rightR8=[r8.find(m=>m.id==='bq099'),r8.find(m=>m.id==='bq100')].filter(Boolean);
+
+    // Count results declared
+    const totalKO=32;
+    const declared=Object.keys(S.bracketResults).length;
+    const pct=Math.round(declared/totalKO*100);
+
+    const progressBar='<div style="margin-bottom:12px;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+      +'<div style="font-size:16px;font-weight:900;letter-spacing:1px;color:#facc15;">Cuadro Eliminatorio 🏆</div>'
+      +'<div style="font-size:10px;color:rgba(255,255,255,0.4);">'+declared+'/'+totalKO+' resultados</div>'
+      +'</div>'
+      +'<div style="background:rgba(255,255,255,0.05);border-radius:4px;height:3px;">'
+      +'<div style="background:linear-gradient(90deg,#facc15,#f97316);height:3px;border-radius:4px;width:'+pct+'%;transition:width 0.5s;"></div>'
+      +'</div>'
+      +'</div>';
+
+    const html=progressBar
+      +'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">'
+      +'<div style="display:flex;gap:5px;align-items:stretch;min-width:720px;">'
+      +col(leftR32,'R32')+col(leftR16,'8vos')+col(leftR8,'4tos')
+      +'<div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 4px;gap:4px;">'
+        +'<div style="font-size:9px;font-weight:800;color:rgba(250,204,21,0.5);text-transform:uppercase;letter-spacing:1px;">Final</div>'
+        +cell(fin[0])
+        +(S.bracketResults[fin[0].id]?'<div style="font-size:16px;margin-top:4px;">🏆</div>':'<div style="font-size:20px;opacity:0.3;margin-top:4px;">🏆</div>')
+      +'</div>'
+      +col(rightR8,'4tos')+col(rightR16,'8vos')+col(rightR32,'R32')
+      +'</div></div>';
+
+    el.innerHTML=html;
+  }catch(e){
+    el.innerHTML='<div style="padding:20px;color:var(--muted);text-align:center;">Cuadro disponible cuando empiecen los eliminatorios.</div>';
+  }
 }
 
 async function boot(){

@@ -636,8 +636,11 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
         <div class="gol-grid" id="admin-scorer-opts"></div>
       </div>
       <div class="asec">
-        <h3>Declarar ganadores del bracket</h3>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Declara el ganador de cada partido eliminatorio.</div>
+        <h3>Bracket eliminatorio</h3>
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Estado · participantes</div>
+        <div id="admin-bracket-status" style="margin-bottom:12px;"></div>
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;margin:8px 0 6px;">Declarar ganadores</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Declara el ganador de cada partido eliminatorio.</div>
         <div id="admin-bracket-list" style="max-height:250px;overflow-y:auto;"></div>
       </div>
       <div class="asec">
@@ -676,7 +679,7 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
   <div style="background:linear-gradient(160deg,#16233a,#0e1726);border:1px solid rgba(34,197,94,0.3);border-radius:18px;padding:24px 22px;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
     <div style="font-size:38px;margin-bottom:8px;">🏟️</div>
     <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;margin-bottom:8px;color:#fff;">¡No olvides tu bracket!</div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;margin-bottom:18px;">Llena tus predicciones de toda la fase eliminatoria, desde dieciseisavos hasta la final. Tienes hasta el <b style="color:var(--g);">lunes 29 jun a las 12am</b>. ¡Cada acierto suma puntos!</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;margin-bottom:18px;">Llena tus predicciones de toda la fase eliminatoria, desde dieciseisavos hasta la final. Tienes hasta el <b style="color:var(--g);">domingo 29 jun a las 12pm</b>. ¡Cada acierto suma puntos!</div>
     <button onclick="dismissBracketReminder();nav('bracket');" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--g);color:#06210f;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;margin-bottom:8px;">Llenar bracket 🎯</button>
     <button onclick="dismissBracketReminder()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.5);font-size:12px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;">Más tarde</button>
   </div>
@@ -1033,7 +1036,7 @@ function initApp(){
 
 
 // Bracket lock: open until Monday June 29 00:00 EC (Lunes 12am)
-const BRACKET_LOCK_DT=new Date('2026-06-29T00:00:00-05:00');
+const BRACKET_LOCK_DT=new Date('2026-06-29T12:00:00-05:00');
 const isBracketLocked=()=>new Date()>=BRACKET_LOCK_DT;
 
 const BRACKET_ROUNDS=[
@@ -1207,11 +1210,16 @@ function bracketLockBanner(){
   const el=document.getElementById('bracket-lock-banner');if(!el)return;
   const locked=isBracketLocked();
   if(locked){
-    el.innerHTML='<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:10px 12px;font-size:11px;color:#f87171;line-height:1.5;">🔒 El bracket está cerrado. Las predicciones se bloquearon el lunes 29 jun a las 12am. Los partidos sin pick quedaron vacíos.</div>';
+    el.innerHTML='<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:10px 12px;font-size:11px;color:#f87171;line-height:1.5;">🔒 El bracket está cerrado. Las predicciones se bloquearon el dom 29 jun a las 12pm. Los partidos sin pick quedaron vacíos.</div>';
   }else{
     const ms=BRACKET_LOCK_DT-new Date();
     const h=Math.floor(ms/3600000);const d=Math.floor(h/24);
-    el.innerHTML='<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,0.7);line-height:1.55;">🎯 Llena <b>todo el bracket hasta la final</b> antes del <b style="color:var(--g);">lunes 29 jun, 12am</b> ('+(d>0?d+'d ':'')+(h%24)+'h restantes). Cada acierto suma puntos según la ronda. Si no llenas un partido, queda vacío y no suma — pero aún puedes predecir las siguientes rondas.</div>';
+    const myPicks2=S.bracketPicks[S.curUser]||{};
+    const filled2=Object.keys(myPicks2).length;
+    const total2=31;
+    const ptsInPlay=156;
+    const fillColor=filled2>=total2?'var(--g)':'#f59e0b';
+    el.innerHTML='<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,0.7);line-height:1.65;">🏆 <b style="color:var(--g);">'+ptsInPlay+' pts</b> en juego · Llena hasta la final antes del <b style="color:var(--g);">dom 29 jun, 12pm</b> ('+(d>0?d+'d ':'')+(h%24)+'h restantes) · Llenas: <b style="color:'+fillColor+';">'+filled2+'/'+total2+'</b></div>';
   }
 }
 
@@ -1436,7 +1444,7 @@ window.nav=function(id){
   if(id==='partidos'){buildFilterTabs();renderMatches();}
   if(id==='picks'&&!S.rendered.picks){renderGroups();renderGol();renderEcuPick();S.rendered.picks=true;}
   if(id==='mundial'&&!S.rendered.mundial){renderMundial();renderCarrera();S.rendered.mundial=true;}
-  if(id==='bracket'){if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();}
+  if(id==='bracket'){if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();showBracketReminder();}
 
 window.switchMundialTab=function(tab){
   ['mundial','stats','carrera'].forEach(t=>{
@@ -2596,7 +2604,7 @@ function initAdmin(){
   if(S.adminUnlocked){
     document.getElementById('admin-lock').style.display='none';
     document.getElementById('admin-content').style.display='block';
-    setTimeout(()=>{renderAdminMatches();renderPinsList();renderAdminPlayerStatus();renderAdminScorer();renderAdminClassifieds();renderAdminEcu();renderAdminBracket();},50);
+    setTimeout(()=>{renderAdminMatches();renderPinsList();renderAdminPlayerStatus();renderAdminScorer();renderAdminClassifieds();renderAdminEcu();renderAdminBracket();renderAdminBracketStatus();},50);
   }else{
     document.getElementById('admin-lock').style.display='block';
     document.getElementById('admin-content').style.display='none';
@@ -2735,6 +2743,38 @@ function renderAdminPlayerStatus(){
     '</div>'+rows;
 }
 
+function renderAdminBracketStatus(){
+  const el=document.getElementById('admin-bracket-status');if(!el)return;
+  const totalMatches=BRACKET_ROUNDS.reduce((acc,r)=>acc+r.matches.length,0);
+  const ps=PLAYERS.map(p=>{
+    const picks=S.bracketPicks[p.id]||{};
+    const filled=Object.keys(picks).length;
+    const complete=filled>=totalMatches;
+    const partial=!complete&&filled>0;
+    return{...p,filled,complete,partial};
+  }).sort((a,b)=>b.filled-a.filled||a.name.localeCompare(b.name));
+  const nComplete=ps.filter(p=>p.complete).length;
+  const nPartial=ps.filter(p=>p.partial).length;
+  const nEmpty=ps.filter(p=>!p.complete&&!p.partial).length;
+  const rows=ps.map(p=>{
+    const sc=p.complete?'var(--g)':p.partial?'#f59e0b':'rgba(255,255,255,0.2)';
+    const sl=p.complete?'Completo':p.partial?'Parcial ('+p.filled+'/'+totalMatches+')':'Vacío';
+    const bg=p.complete?'rgba(34,197,94,0.06)':p.partial?'rgba(245,158,11,0.04)':'rgba(255,255,255,0.01)';
+    const bd=p.complete?'rgba(34,197,94,0.15)':p.partial?'rgba(245,158,11,0.1)':'rgba(255,255,255,0.04)';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:'+bg+';border:1px solid '+bd+';margin-bottom:3px;">'+
+      avSm(p,20)+
+      '<span style="font-size:11px;flex:1;font-weight:600;">'+p.name+'</span>'+
+      '<span style="font-size:10px;font-weight:700;color:'+sc+';">'+sl+'</span>'+
+    '</div>';
+  }).join('');
+  el.innerHTML=
+    '<div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap;">'+
+      '<span style="font-size:10px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:var(--g);padding:2px 8px;border-radius:16px;font-weight:700;">✅ '+nComplete+' completo</span>'+
+      '<span style="font-size:10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;padding:2px 8px;border-radius:16px;font-weight:700;">⚡ '+nPartial+' parcial</span>'+
+      '<span style="font-size:10px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);color:#f87171;padding:2px 8px;border-radius:16px;font-weight:700;">❌ '+nEmpty+' vacío</span>'+
+    '</div>'+rows;
+}
+
 function renderAdminBracket(){
   const el=document.getElementById('admin-bracket-list');if(!el)return;
   let html='';
@@ -2823,7 +2863,7 @@ window.toggleClassified4=async function(gid,tname){
   else{cl.shift();cl.push(tname);}
   S.classifieds[gid]=cl;
   await sbUpdate('admin_config','key=eq.classified_'+gid,{key:'classified_'+gid,value:JSON.stringify(cl)});
-  renderAdminClassifieds();renderBracketSketch();renderBracketContent();renderRanking();
+  renderAdminClassifieds();renderBracketSketch();renderBracketContent();renderAdminBracketStatus();renderRanking();
   toast('✅ Grupo '+gid+' actualizado: '+cl.join(' > '));
 };
 
@@ -2911,11 +2951,9 @@ function showBracketReminder(){
   const now=new Date();
   const bracketStart=new Date('2026-06-27T00:01:00-05:00');
   if(now<bracketStart||now>=BRACKET_LOCK_DT)return;
-  const key='bracket_reminder_'+now.toDateString();
-  if(localStorage.getItem(key))return;
   const myPicks=S.bracketPicks[S.curUser]||{};
-  // R32 has 16 matches; remind until they've filled most
-  if(Object.keys(myPicks).length>=28)return;
+  // Don't show if already filled everything (31 bracket matches total)
+  if(Object.keys(myPicks).length>=31)return;
   const el=document.getElementById('bracket-reminder');
   if(el)el.style.display='flex';
 }

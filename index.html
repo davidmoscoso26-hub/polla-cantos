@@ -712,7 +712,7 @@ async function sbUpdate(table,filter,data){
 }
 
 async function sbDelete(table,filter){
-  await sb(table+'?'+filter,{method:'DELETE'});
+  await sb(table+'?'+filter,{method:'DELETE',headers:{'Prefer':'return=representation'}});
 }
 
 // PLAYERS
@@ -861,7 +861,7 @@ async function loadData(){
     Object.keys(PHOTOS_DEFAULT).forEach(k=>{if(!S.photos[k])S.photos[k]=PHOTOS_DEFAULT[k];});
     // Load bracket
     const bpicks=await sbGet('bracket_picks?select=*');
-    if(bpicks)bpicks.forEach(r=>{if(!S.bracketPicks[r.user_id])S.bracketPicks[r.user_id]={};S.bracketPicks[r.user_id][r.match_id]=normTeam(r.team);});
+    if(bpicks)bpicks.forEach(r=>{if(!r.team||!r.team.trim())return;if(!S.bracketPicks[r.user_id])S.bracketPicks[r.user_id]={};S.bracketPicks[r.user_id][r.match_id]=normTeam(r.team);});
     const bres=await sbGet('bracket_results?select=*');
     if(bres)bres.forEach(r=>{S.bracketResults[r.match_id]=normTeam(r.winner);});
     // Load statuses
@@ -1328,9 +1328,9 @@ window.saveBracketPick=async function(mid,team){
   const normT=normTeam(team);
   const existing=S.bracketPicks[S.curUser][mid];
   if(existing&&normTeam(existing)===normT){
-    // Same team tapped again → deselect
+    // Same team tapped again → deselect (set to empty, filtered on load)
     delete S.bracketPicks[S.curUser][mid];
-    await sbDelete('bracket_picks','user_id=eq.'+S.curUser+'&match_id=eq.'+mid);
+    await sbUpdate('bracket_picks','user_id=eq.'+S.curUser+'&match_id=eq.'+mid,{user_id:S.curUser,match_id:mid,team:''});
     toast('Pick eliminado');
   }else{
     S.bracketPicks[S.curUser][mid]=normT;

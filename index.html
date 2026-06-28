@@ -551,16 +551,13 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
       <div id="mundial-tab-btn" onclick="switchMundialTab('mundial')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🌍 Grupos</div>
       <div id="stats-tab-btn" onclick="switchMundialTab('stats')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">📊 Stats</div>
     </div>
-    <div id="mundial-tab-content">
-    <div id="playoff-tab-content" style="display:none;"></div>
+    <div id="playoff-tab-content"></div>
+    <div id="mundial-tab-content" style="display:none;">
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Se actualiza cuando el admin carga los resultados.</div>
       <div class="mundial-grid" id="mundial-grid"><div class="loading"><div class="spinner"></div><p style="font-size:13px;color:var(--muted);">Calculando...</p></div></div>
     </div>
     <div id="stats-tab-content" style="display:none;">
       <div id="stats-wrap"><div class="loading"><div class="spinner"></div><p style="font-size:13px;color:var(--muted);">Calculando...</p></div></div>
-    </div>
-    <div id="carrera-tab-content" style="display:none;">
-      <div id="carrera-wrap"><div class="loading"><div class="spinner"></div><p style="font-size:13px;color:var(--muted);">Calculando...</p></div></div>
     </div>
   </div>
 

@@ -1216,10 +1216,10 @@ function bracketLockBanner(){
     const h=Math.floor(ms/3600000);const d=Math.floor(h/24);
     const myPicks2=S.bracketPicks[S.curUser]||{};
     const filled2=Object.keys(myPicks2).length;
-    const total2=31;
+    const total2=32;
     const ptsInPlay=156;
     const fillColor=filled2>=total2?'var(--g)':'#f59e0b';
-    el.innerHTML='<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,0.7);line-height:1.65;">🏆 <b style="color:var(--g);">'+ptsInPlay+' pts</b> en juego · Llena hasta la final antes del <b style="color:var(--g);">lun 29 jun, 11:59am</b> ('+(d>0?d+'d ':'')+(h%24)+'h restantes) · Llenas: <b style="color:'+fillColor+';">'+filled2+'/'+total2+'</b></div>';
+    el.innerHTML='<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,0.7);line-height:1.65;">🏆 <b style="color:var(--g);">'+ptsInPlay+' pts</b> en juego · Llena hasta la final antes del <b style="color:var(--g);">lun 29 jun, 11:59am</b> ('+(d>0?d+'d ':'')+(h%24)+'h restantes) · Llenas: <b style="color:'+fillColor+';">'+Math.min(filled2,total2)+'/'+total2+'</b></div>';
   }
 }
 
@@ -1326,8 +1326,17 @@ window.saveBracketPick=async function(mid,team){
   }
   if(!S.bracketPicks[S.curUser])S.bracketPicks[S.curUser]={};
   const normT=normTeam(team);
-  S.bracketPicks[S.curUser][mid]=normT;
-  await sbUpdate('bracket_picks','user_id=eq.'+S.curUser+'&match_id=eq.'+mid,{user_id:S.curUser,match_id:mid,team:normT});
+  const existing=S.bracketPicks[S.curUser][mid];
+  if(existing&&normTeam(existing)===normT){
+    // Same team tapped again → deselect
+    delete S.bracketPicks[S.curUser][mid];
+    await sbDelete('bracket_picks','user_id=eq.'+S.curUser+'&match_id=eq.'+mid);
+    toast('Pick eliminado');
+  }else{
+    S.bracketPicks[S.curUser][mid]=normT;
+    await sbUpdate('bracket_picks','user_id=eq.'+S.curUser+'&match_id=eq.'+mid,{user_id:S.curUser,match_id:mid,team:normT});
+    toast('✅ Pick guardado');
+  }
   if(bracketTab==='cuadro'){
     // Preserve scroll position on cuadro
     const wrap=document.querySelector('#bracket-cuadro [style*="overflow-x"]');
@@ -1338,7 +1347,6 @@ window.saveBracketPick=async function(mid,team){
       if(w)w.scrollLeft=scrollX;
     });
   }else renderBracketContent();
-  toast('✅ Pick guardado');
 };
 
 // Visual two-sided bracket
@@ -3005,7 +3013,7 @@ function showBracketReminder(){
   if(now<bracketStart||now>=BRACKET_LOCK_DT)return;
   const myPicks=S.bracketPicks[S.curUser]||{};
   const filled=Object.keys(myPicks).length;
-  const total=31;
+  const total=32;
   if(filled>=total)return;
   // Show once per session, then every 30 min
   const key='bracket_shown_'+S.curUser;

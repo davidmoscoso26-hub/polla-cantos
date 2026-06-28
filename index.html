@@ -1238,6 +1238,22 @@ function renderBracketContent(){
       const w=S.bracketResults[srcId]||myPicks[srcId];
       if(w){const p=normTeam(w).split(' ');return{f:p[0],n:p.slice(1).join(' ')};}
     }
+    if(typeof label==='string'&&label.startsWith('Perd.')){
+      const srcId=label.replace('Perd.','');
+      // The loser = the team in srcId that was NOT the winner
+      const winner=S.bracketResults[srcId]||myPicks[srcId];
+      const src=findBracketMatch(srcId);
+      if(winner&&src){
+        const th=pickResolve(src.h);
+        const ta=pickResolve(src.a);
+        if(th&&ta){
+          const wNorm=normTeam(winner);
+          const hNorm=normTeam(th.f+' '+th.n);
+          const aNorm=normTeam(ta.f+' '+ta.n);
+          return wNorm===hNorm?ta:th;
+        }
+      }
+    }
     return null;
   }
 
@@ -1341,11 +1357,16 @@ function renderBracketCuadro(){
     if(typeof label==='object'&&label.n)return label;
     if(typeof label==='string'&&label.startsWith('Gan.')){
       const srcId=label.replace('Gan.','');
-      // Admin result takes priority, then user pick
       const winner=S.bracketResults[srcId]||myPicks[srcId];
-      if(winner){
-        const parts=winner.split(' ');
-        return {f:parts[0], n:parts.slice(1).join(' ')};
+      if(winner){const parts=normTeam(winner).split(' ');return{f:parts[0],n:parts.slice(1).join(' ')};}
+    }
+    if(typeof label==='string'&&label.startsWith('Perd.')){
+      const srcId=label.replace('Perd.','');
+      const winner=S.bracketResults[srcId]||myPicks[srcId];
+      const src=findBracketMatch(srcId);
+      if(winner&&src){
+        const th=cuadroResolve(src.h);const ta=cuadroResolve(src.a);
+        if(th&&ta){const wNorm=normTeam(winner);return normTeam(th.f+' '+th.n)===wNorm?ta:th;}
       }
     }
     return null;}catch(e){return null;}
@@ -1406,7 +1427,9 @@ function renderBracketCuadro(){
   }
 
   // Left side per official image: br074,br077,br073,br075,br083,br084,br081,br082
-  const leftIds32=['br074','br077','br073','br075','br083','br084','br081','br082'];
+  const r3=BRACKET_ROUNDS.find(r=>r.id==='r3');
+  const third=r3?r3.matches[0]:null;
+    const leftIds32=['br074','br077','br073','br075','br083','br084','br081','br082'];
   const rightIds32=['br076','br078','br079','br080','br086','br088','br085','br087'];
   const leftR32=leftIds32.map(id=>r32.find(m=>m.id===id)).filter(Boolean);
   const rightR32=rightIds32.map(id=>r32.find(m=>m.id===id)).filter(Boolean);
@@ -1427,8 +1450,11 @@ function renderBracketCuadro(){
     +'<div style="flex:0 0 auto;">'+column(leftR16,false,'8vos')+'</div>'
     +'<div style="flex:0 0 auto;">'+column(leftR8,false,'4tos')+'</div>'
     +'<div style="flex:0 0 auto;">'+column(leftR4,false,'Semi')+'</div>'
-    +'<div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 4px;">'
-      +'<div style="font-size:20px;margin-bottom:4px;">🏆</div>'+cell(fin[0],false)
+    +'<div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 4px;gap:5px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--g);text-align:center;text-transform:uppercase;letter-spacing:1px;">Final</div>'
+      +cell(fin[0],false)
+      +'<div style="font-size:11px;font-weight:700;color:#f59e0b;text-align:center;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">3er Puesto</div>'
+      +(r3&&r3.matches[0]?cell(r3.matches[0],false):'')
     +'</div>'
     +'<div style="flex:0 0 auto;">'+column(rightR4,false,'Semi')+'</div>'
     +'<div style="flex:0 0 auto;">'+column(rightR8,false,'4tos')+'</div>'
@@ -3000,7 +3026,9 @@ function renderPlayoffBracket(){
     const r4=BRACKET_ROUNDS.find(r=>r.id==='r4').matches;
     const fin=BRACKET_ROUNDS.find(r=>r.id==='r2').matches;
 
-    // Official resolver - only uses bracketResults (admin declared)
+    const r3off=BRACKET_ROUNDS.find(r=>r.id==='r3');
+    const thirdOff=r3off?r3off.matches[0]:null;
+        // Official resolver - only uses bracketResults (admin declared)
     function offResolve(label){
       if(typeof label==='object'&&label.n)return label;
       if(typeof label==='string'&&label.startsWith('Gan.')){
@@ -3046,6 +3074,8 @@ function renderPlayoffBracket(){
       return h+'</div>';
     }
 
+    const r3=BRACKET_ROUNDS.find(r=>r.id==='r3');
+  const third=r3?r3.matches[0]:null;
     const leftIds32=['br074','br077','br073','br075','br083','br084','br081','br082'];
     const rightIds32=['br076','br078','br079','br080','br086','br088','br085','br087'];
     const leftR32=leftIds32.map(id=>r32.find(m=>m.id===id)).filter(Boolean);
@@ -3074,10 +3104,12 @@ function renderPlayoffBracket(){
       +'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">'
       +'<div style="display:flex;gap:5px;align-items:stretch;min-width:720px;">'
       +col(leftR32,'R32')+col(leftR16,'8vos')+col(leftR8,'4tos')
-      +'<div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 4px;gap:4px;">'
+      +'<div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 4px;gap:6px;">'
         +'<div style="font-size:9px;font-weight:800;color:rgba(250,204,21,0.5);text-transform:uppercase;letter-spacing:1px;">Final</div>'
         +cell(fin[0])
-        +(S.bracketResults[fin[0].id]?'<div style="font-size:16px;margin-top:4px;">🏆</div>':'<div style="font-size:20px;opacity:0.3;margin-top:4px;">🏆</div>')
+        +(S.bracketResults[fin[0].id]?'<div style="font-size:14px;">🏆</div>':'<div style="font-size:18px;opacity:0.2;">🏆</div>')
+        +'<div style="font-size:9px;font-weight:800;color:rgba(245,158,11,0.5);text-transform:uppercase;letter-spacing:1px;">3er Puesto</div>'
+        +(thirdOff?cell(thirdOff):'')
       +'</div>'
       +col(rightR8,'4tos')+col(rightR16,'8vos')+col(rightR32,'R32')
       +'</div></div>';

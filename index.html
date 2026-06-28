@@ -1776,6 +1776,10 @@ window.showPlayerModal=function(pid){
   });
   const ecu=S.ecuPicks?S.ecuPicks[pid]:null;
   const ecuPhase=ecu?ECU_PHASES.find(p=>p.id===ecu):null;
+  // Champion pick from bracket
+  const champPick=(S.bracketPicks[pid]||{})['bf104'];
+  const champName=champPick?normTeam(champPick).split(' ').slice(1).join(' '):null;
+  const champFlag=champPick?normTeam(champPick).split(' ')[0]:null;
   document.getElementById('modal-content').innerHTML=`
     <div style="text-align:center;margin-bottom:14px;">${avCircle(p,72,'av-ring-default','')}</div>
     <div style="text-align:center;font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;margin-bottom:14px;">${p.name}</div>
@@ -1784,14 +1788,18 @@ window.showPlayerModal=function(pid){
       <div style="background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:#facc15;">${exact}</div><div style="font-size:10px;color:var(--muted);">EXACTOS</div></div>
       <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:30px;">${wins}</div><div style="font-size:10px;color:var(--muted);">ACIERTOS</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
-      <div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Goleador elegido</div>
-        <div style="font-size:14px;font-weight:700;">${gol?(GOLES.find(g=>g.id===gol)?.flag+' '+GOLES.find(g=>g.id===gol)?.name):'No eligió aún'}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div style="background:rgba(250,204,21,0.05);border:1px solid rgba(250,204,21,0.15);border-radius:10px;padding:10px;">
+        <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">🏆 Campeón</div>
+        <div style="font-size:13px;font-weight:800;color:${champName?'#facc15':'rgba(255,255,255,0.25)'};">${champName?(champFlag+' '+champName):'Pendiente'}</div>
       </div>
-      <div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">🇪🇨 Ecuador</div>
-        <div style="font-size:14px;font-weight:700;">${ecuPhase?ecuPhase.emoji+' '+ecuPhase.label:'No eligió aún'}</div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:10px;">
+        <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">⚽ Goleador</div>
+        <div style="font-size:13px;font-weight:800;color:${gol?'#fff':'rgba(255,255,255,0.25)'};">${gol?(GOLES.find(g=>g.id===gol)?.flag+' '+GOLES.find(g=>g.id===gol)?.name):'Pendiente'}</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:10px;">
+        <div style="font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">🇪🇨 Ecuador</div>
+        <div style="font-size:13px;font-weight:800;color:${ecuPhase?'#fff':'rgba(255,255,255,0.25)'};">${ecuPhase?ecuPhase.emoji+' '+ecuPhase.label:'Pendiente'}</div>
       </div>
     </div>
     ${predsHtml?`<div style="font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Últimos pronósticos</div>${predsHtml}`:'<div style="font-size:13px;color:var(--muted);text-align:center;padding:12px;">Sin pronósticos aún</div>'}

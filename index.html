@@ -1500,7 +1500,7 @@ function launchConfetti(){
 // RANKING
 function calcPts(pid){
   let pts=0,exact=0,wins=0;const pr=S.preds[pid]||{};
-  // Match points
+  // Match points (groups + bracket)
   Object.keys(S.results).filter(mid=>S.results[mid]?.done).forEach(mid=>{
     const res=S.results[mid];const p=pr[mid];if(!p)return;
     if(p.h===res.h&&p.a===res.a){pts+=5;exact++;const all=PLAYERS.map(pl=>(S.preds[pl.id]||{})[mid]).filter(Boolean);if(all.filter(x=>x.h===p.h&&x.a===p.a).length===1)pts+=2;}
@@ -1544,11 +1544,11 @@ function calcPts(pid){
   return{pts,exact,wins};
 }
 function getLast5(pid){
-  const pr=S.preds[pid]||{};const done=MATCHES.filter(m=>S.results[m.id]?.done).slice(-5);
+  const pr=S.preds[pid]||{};const allM=[...MATCHES,...BRACKET_MATCHES];const done=allM.filter(m=>S.results[m.id]?.done).slice(-5);
   return done.map(m=>{const res=S.results[m.id];const p=pr[m.id];if(!p)return'empty';if(p.h===res.h&&p.a===res.a)return'exact';const pw=p.h>p.a?'h':p.h<p.a?'a':'d';const rw=res.h>res.a?'h':res.h<res.a?'a':'d';return pw===rw?'win':'loss';});
 }
 function getStreak(pid){
-  const pr=S.preds[pid]||{};const done=MATCHES.filter(m=>S.results[m.id]?.done).reverse();let s=0;
+  const pr=S.preds[pid]||{};const done=[...MATCHES,...BRACKET_MATCHES].filter(m=>S.results[m.id]?.done).reverse();let s=0;
   for(const m of done){const res=S.results[m.id];const p=pr[m.id];if(!p)break;const pw=p.h>p.a?'h':p.h<p.a?'a':'d';const rw=res.h>res.a?'h':res.h<res.a?'a':'d';if(p.h===res.h&&p.a===res.a||pw===rw)s++;else break;}return s;
 }
 
@@ -1917,24 +1917,7 @@ function getMatchDisplay(m){
 }
 
 function buildMatchCard(m,showInputs){
-  // Bracket match (R32, R16, etc) - show like a regular match, no score inputs
-  if(m.rd||m.isBracket){
-    const bracketWinner=S.bracketResults[m.id];
-    const started=m.dt&&m.tm&&matchLocked(m);
-    const timeStr=m.tm?m.tm+' EC':'Por confirmar';
-    const centerBlock=bracketWinner
-      ?`<div class="rscore" style="font-size:18px;">${bracketWinner.split(' ')[0]}</div>`
-      :started
-        ?`<div style="font-size:11px;color:rgba(255,255,255,0.2);font-weight:700;display:flex;align-items:center;gap:3px;"><span class="live-dot"></span>EN JUEGO</div>`
-        :`<div class="vstxt">VS</div>`;
-    return `<div class="mc ${bracketWinner?'mc-done':''}">
-      <div class="mteams">
-        <div class="tb"><div class="tflag">${m.h.f}</div><div class="tname">${m.h.n}</div></div>
-        <div class="vsb">${centerBlock}<div class="mtime">${timeStr}</div><div class="mgrp" style="color:#818cf8;">R32</div></div>
-        <div class="tb"><div class="tflag">${m.a.f}</div><div class="tname">${m.a.n}</div></div>
-      </div>
-    </div>`;
-  }
+  // Bracket match - treat exactly like a group match (score prediction + results)
 
   const res=S.results[m.id];const isDone=res?.done;
   const pr=!S.isVisitor?(S.preds[S.curUser]||{})[m.id]:undefined;
@@ -2516,22 +2499,22 @@ function renderCarrera(){
 // Bracket matches visible in Matches tab
 const BRACKET_MATCHES=[
   // R32
-  {id:'br073',h:{n:'Canadá',f:'🇨🇦'},a:{n:'Sudáfrica',f:'🇿🇦'},dt:'2026-06-28',tm:'14:00',rd:'R32'},
-  {id:'br076',h:{n:'Brasil',f:'🇧🇷'},a:{n:'Japón',f:'🇯🇵'},dt:'2026-06-29',tm:'12:00',rd:'R32'},
-  {id:'br074',h:{n:'Alemania',f:'🇩🇪'},a:{n:'Paraguay',f:'🇵🇾'},dt:'2026-06-29',tm:'15:30',rd:'R32'},
-  {id:'br078',h:{n:'Costa de Marfil',f:'🇨🇮'},a:{n:'Noruega',f:'🇳🇴'},dt:'2026-06-30',tm:'12:00',rd:'R32'},
-  {id:'br077',h:{n:'Francia',f:'🇫🇷'},a:{n:'Suecia',f:'🇸🇪'},dt:'2026-06-30',tm:'16:00',rd:'R32'},
-  {id:'br075',h:{n:'Países Bajos',f:'🇳🇱'},a:{n:'Marruecos',f:'🇲🇦'},dt:'2026-06-30',tm:'20:00',rd:'R32'},
-  {id:'br080',h:{n:'Inglaterra',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},a:{n:'RD del Congo',f:'🇨🇩'},dt:'2026-07-01',tm:'11:00',rd:'R32'},
-  {id:'br082',h:{n:'Bélgica',f:'🇧🇪'},a:{n:'Senegal',f:'🇸🇳'},dt:'2026-07-01',tm:'15:00',rd:'R32'},
-  {id:'br081',h:{n:'USA',f:'🇺🇸'},a:{n:'Bosnia H.',f:'🇧🇦'},dt:'2026-07-01',tm:'19:00',rd:'R32'},
-  {id:'br079',h:{n:'México',f:'🇲🇽'},a:{n:'Ecuador',f:'🇪🇨'},dt:'2026-07-01',tm:'20:00',rd:'R32'},
-  {id:'br084',h:{n:'España',f:'🇪🇸'},a:{n:'Austria',f:'🇦🇹'},dt:'2026-07-02',tm:'14:00',rd:'R32'},
-  {id:'br083',h:{n:'Portugal',f:'🇵🇹'},a:{n:'Croacia',f:'🇭🇷'},dt:'2026-07-02',tm:'18:00',rd:'R32'},
-  {id:'br085',h:{n:'Suiza',f:'🇨🇭'},a:{n:'Argelia',f:'🇩🇿'},dt:'2026-07-02',tm:'23:00',rd:'R32'},
-  {id:'br088',h:{n:'Australia',f:'🇦🇺'},a:{n:'Egipto',f:'🇪🇬'},dt:'2026-07-03',tm:'13:00',rd:'R32'},
-  {id:'br086',h:{n:'Argentina',f:'🇦🇷'},a:{n:'Cabo Verde',f:'🇨🇻'},dt:'2026-07-03',tm:'17:00',rd:'R32'},
-  {id:'br087',h:{n:'Colombia',f:'🇨🇴'},a:{n:'Ghana',f:'🇬🇭'},dt:'2026-07-03',tm:'20:30',rd:'R32'},
+  {id:'br073',h:{n:'Canadá',f:'🇨🇦'},a:{n:'Sudáfrica',f:'🇿🇦'},dt:'2026-06-28',tm:'14:00',gr:'R32'},
+  {id:'br076',h:{n:'Brasil',f:'🇧🇷'},a:{n:'Japón',f:'🇯🇵'},dt:'2026-06-29',tm:'12:00',gr:'R32'},
+  {id:'br074',h:{n:'Alemania',f:'🇩🇪'},a:{n:'Paraguay',f:'🇵🇾'},dt:'2026-06-29',tm:'15:30',gr:'R32'},
+  {id:'br078',h:{n:'Costa de Marfil',f:'🇨🇮'},a:{n:'Noruega',f:'🇳🇴'},dt:'2026-06-30',tm:'12:00',gr:'R32'},
+  {id:'br077',h:{n:'Francia',f:'🇫🇷'},a:{n:'Suecia',f:'🇸🇪'},dt:'2026-06-30',tm:'16:00',gr:'R32'},
+  {id:'br075',h:{n:'Países Bajos',f:'🇳🇱'},a:{n:'Marruecos',f:'🇲🇦'},dt:'2026-06-30',tm:'20:00',gr:'R32'},
+  {id:'br080',h:{n:'Inglaterra',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},a:{n:'RD del Congo',f:'🇨🇩'},dt:'2026-07-01',tm:'11:00',gr:'R32'},
+  {id:'br082',h:{n:'Bélgica',f:'🇧🇪'},a:{n:'Senegal',f:'🇸🇳'},dt:'2026-07-01',tm:'15:00',gr:'R32'},
+  {id:'br081',h:{n:'USA',f:'🇺🇸'},a:{n:'Bosnia H.',f:'🇧🇦'},dt:'2026-07-01',tm:'19:00',gr:'R32'},
+  {id:'br079',h:{n:'México',f:'🇲🇽'},a:{n:'Ecuador',f:'🇪🇨'},dt:'2026-07-01',tm:'20:00',gr:'R32'},
+  {id:'br084',h:{n:'España',f:'🇪🇸'},a:{n:'Austria',f:'🇦🇹'},dt:'2026-07-02',tm:'14:00',gr:'R32'},
+  {id:'br083',h:{n:'Portugal',f:'🇵🇹'},a:{n:'Croacia',f:'🇭🇷'},dt:'2026-07-02',tm:'18:00',gr:'R32'},
+  {id:'br085',h:{n:'Suiza',f:'🇨🇭'},a:{n:'Argelia',f:'🇩🇿'},dt:'2026-07-02',tm:'23:00',gr:'R32'},
+  {id:'br088',h:{n:'Australia',f:'🇦🇺'},a:{n:'Egipto',f:'🇪🇬'},dt:'2026-07-03',tm:'13:00',gr:'R32'},
+  {id:'br086',h:{n:'Argentina',f:'🇦🇷'},a:{n:'Cabo Verde',f:'🇨🇻'},dt:'2026-07-03',tm:'17:00',gr:'R32'},
+  {id:'br087',h:{n:'Colombia',f:'🇨🇴'},a:{n:'Ghana',f:'🇬🇭'},dt:'2026-07-03',tm:'20:30',gr:'R32'},
 ];
 
 // MUNDIAL TABLE
@@ -2633,7 +2616,7 @@ window.unlockAdmin=function(){
 
 function renderAdminMatches(){
   const q=(document.getElementById('admin-search')?.value||'').toLowerCase().trim();
-  let list=MATCHES;
+  let list=[...MATCHES,...BRACKET_MATCHES];
   if(q)list=list.filter(m=>m.h.n.toLowerCase().includes(q)||m.a.n.toLowerCase().includes(q)||m.gr.toLowerCase().includes(q));
   // Sort: live first, then pending by date, then done at bottom
   list=[...list].sort((a,b)=>{

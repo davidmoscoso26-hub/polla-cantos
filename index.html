@@ -677,7 +677,7 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
   <div style="background:linear-gradient(160deg,#16233a,#0e1726);border:1px solid rgba(34,197,94,0.3);border-radius:18px;padding:24px 22px;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
     <div style="font-size:38px;margin-bottom:8px;">🏟️</div>
     <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;margin-bottom:8px;color:#fff;">¡No olvides tu bracket!</div>
-    <div id="bracket-reminder-text" style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;margin-bottom:18px;">Llena tus predicciones de toda la fase eliminatoria, desde dieciseisavos hasta la final. Tienes hasta el <b style="color:var(--g);">lunes 29 jun a las 11:59am</b>. ¡Hay más de 150 puntos en juego!</div>
+    <div id="bracket-reminder-text" style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;margin-bottom:18px;">Llena tus predicciones de toda la fase eliminatoria, desde dieciseisavos hasta la final. Tienes hasta el <b style="color:var(--g);">lunes 29 jun a la 1pm</b>. ¡Hay más de 150 puntos en juego!</div>
     <button onclick="dismissBracketReminder(true)" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--g);color:#06210f;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;margin-bottom:8px;">Llenar bracket 🎯</button>
     <button onclick="dismissBracketReminder()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.5);font-size:12px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;">Más tarde</button>
   </div>
@@ -1034,7 +1034,7 @@ function initApp(){
 
 
 // Bracket lock: open until Monday June 29 00:00 EC (Lunes 12am)
-const BRACKET_LOCK_DT=new Date('2026-06-29T11:59:00-05:00');
+const BRACKET_LOCK_DT=new Date('2026-06-29T13:00:00-05:00');
 const isBracketLocked=()=>new Date()>=BRACKET_LOCK_DT;
 
 const BRACKET_ROUNDS=[
@@ -1219,7 +1219,7 @@ function bracketLockBanner(){
     const total2=32;
     const ptsInPlay=156;
     const fillColor=filled2>=total2?'var(--g)':'#f59e0b';
-    el.innerHTML='<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,0.7);line-height:1.65;">🏆 <b style="color:var(--g);">'+ptsInPlay+' pts</b> en juego · Llena hasta la final antes del <b style="color:var(--g);">lun 29 jun, 11:59am</b> ('+(d>0?d+'d ':'')+(h%24)+'h restantes) · Llenas: <b style="color:'+fillColor+';">'+Math.min(filled2,total2)+'/'+total2+'</b></div>';
+    el.innerHTML='<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,0.7);line-height:1.65;">🏆 <b style="color:var(--g);">'+ptsInPlay+' pts</b> en juego · Llena hasta la final antes del <b style="color:var(--g);">lun 29 jun, 1pm</b> ('+(d>0?d+'d ':'')+(h%24)+'h restantes) · Llenas: <b style="color:'+fillColor+';">'+Math.min(filled2,total2)+'/'+total2+'</b></div>';
   }
 }
 
@@ -3036,9 +3036,9 @@ function showBracketReminder(){
   const txt=document.getElementById('bracket-reminder-text');
   if(txt){
     if(filled===0){
-      txt.innerHTML=`<b style="color:#fff;">¡${name}, aún no has llenado tu bracket!</b> Tienes <b style="color:#f87171;">${total} predicciones</b> pendientes. Hay más de 150 pts en juego. Llena antes del <b style="color:var(--g);">lun 29 jun, 11:59am</b>.`;
+      txt.innerHTML=`<b style="color:#fff;">¡${name}, aún no has llenado tu bracket!</b> Tienes <b style="color:#f87171;">${total} predicciones</b> pendientes. Hay más de 150 pts en juego. Llena antes del <b style="color:var(--g);">lun 29 jun, 1pm</b>.`;
     }else{
-      txt.innerHTML=`<b style="color:#fff;">¡Te faltan ${remaining} de ${total} predicciones, ${name}!</b> Ya llevas ${filled} picks del bracket. Completa antes del <b style="color:var(--g);">lun 29 jun, 11:59am</b> para no perder puntos.`;
+      txt.innerHTML=`<b style="color:#fff;">¡Te faltan ${remaining} de ${total} predicciones, ${name}!</b> Ya llevas ${filled} picks del bracket. Completa antes del <b style="color:var(--g);">lun 29 jun, 1pm</b> para no perder puntos.`;
     }
   }
   const el=document.getElementById('bracket-reminder');

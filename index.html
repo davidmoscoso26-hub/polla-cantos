@@ -1277,7 +1277,7 @@ function renderBracketContent(){
       const matchDt=m.dt?new Date(m.dt+'T'+(m.tm||'00:00')+':00-05:00'):null;
       const matchStarted=matchDt&&now>=matchDt;
       const teamsKnown=!!(hName&&aName);
-      const canPick=!S.isVisitor&&!isDone&&teamsKnown&&!matchStarted;
+      const canPick=!S.isVisitor&&!isDone&&teamsKnown&&!matchStarted&&!locked;
       const hWin=userPick&&hName&&normTeam(userPick).includes(hName);
       const aWin=userPick&&aName&&normTeam(userPick).includes(aName);
       const hResWin=result&&hName&&normTeam(result).includes(hName);
@@ -1317,13 +1317,7 @@ function renderBracketContent(){
 
 window.saveBracketPick=async function(mid,team){
   if(S.isVisitor)return;
-  if(isBracketLocked()){
-    // After lock, still allow if match hasn't started (grace for later rounds handled by render)
-    const m=findBracketMatch(mid);
-    const now=new Date();
-    const matchDt=m&&m.dt?new Date(m.dt+'T'+(m.tm||'00:00')+':00-05:00'):null;
-    if(matchDt&&now>=matchDt){toast('🔒 Este partido ya empezó');return;}
-  }
+  if(isBracketLocked()){toast('🔒 El bracket está cerrado');return;}
   if(!S.bracketPicks[S.curUser])S.bracketPicks[S.curUser]={};
   const normT=normTeam(team);
   const existing=S.bracketPicks[S.curUser][mid];
@@ -1410,7 +1404,7 @@ function renderBracketCuadro(){
     // Match started?
     const matchDt=m.dt?new Date(m.dt+'T'+(m.tm||'00:00')+':00-05:00'):null;
     const started=matchDt&&new Date()>=matchDt;
-    const canPick=!S.isVisitor&&!result&&!started;
+    const canPick=!S.isVisitor&&!result&&!started&&!locked;
     function row(flag,name,sel,res,val,side){
       const clickable=canPick&&val&&name;
       return '<div data-pick-mid="'+m.id+'" data-pick-val="'+(val||'')+'" class="cuadro-pick-row" style="display:flex;align-items:center;gap:3px;padding:3px 4px;border-radius:4px;cursor:'+(clickable?'pointer':'default')+';background:'+(res?'rgba(34,197,94,0.2)':sel?'rgba(34,197,94,0.1)':'transparent')+';transition:background 0.15s;">'

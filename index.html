@@ -1624,7 +1624,7 @@ function getWeekBounds(week){
 }
 
 function getTotalWeeks(){
-  const done=MATCHES.filter(m=>S.results[m.id]?.done);
+  const done=[...MATCHES,...BRACKET_MATCHES].filter(m=>S.results[m.id]?.done);
   if(done.length===0)return 1;
   const last=done[done.length-1];
   const lastDt=new Date(last.dt+'T'+last.tm+':00-05:00');
@@ -1675,7 +1675,7 @@ function calcWeeklyPts(pid){
   let pts=0,exact=0,wins=0;const pr=S.preds[pid]||{};
   const{start,end}=getWeekBounds(currentWeek);
   Object.keys(S.results).filter(mid=>{
-    const m=MATCHES.find(x=>x.id===mid);
+    const m=[...MATCHES,...BRACKET_MATCHES].find(x=>x.id===mid);
     if(!m||!S.results[mid]?.done)return false;
     const dt=new Date(m.dt+'T'+m.tm+':00-05:00');
     return dt>=start&&dt<end;
@@ -1693,7 +1693,7 @@ function getWeekPositionChange(pid,currentScores){
   const prevScores=PLAYERS.map(p=>{
     let pts=0;const pr=S.preds[p.id]||{};
     Object.keys(S.results).filter(mid=>{
-      const m=MATCHES.find(x=>x.id===mid);
+      const m=[...MATCHES,...BRACKET_MATCHES].find(x=>x.id===mid);
       if(!m||!S.results[mid]?.done)return false;
       const dt=new Date(m.dt+'T'+m.tm+':00-05:00');
       return dt>=start&&dt<end;
@@ -1760,7 +1760,7 @@ window.showPlayerModal=function(pid){
   const doneMids=Object.keys(S.results).filter(mid=>S.results[mid]?.done);
   let predsHtml='';
   doneMids.slice(-6).reverse().forEach(mid=>{
-    const m=MATCHES.find(x=>x.id===mid);if(!m)return;
+    const m=[...MATCHES,...BRACKET_MATCHES].find(x=>x.id===mid);if(!m)return;
     const res=S.results[mid];const pr=(S.preds[pid]||{})[mid];if(!pr)return;
     const isExact=pr.h===res.h&&pr.a===res.a;const pw=pr.h>pr.a?'h':pr.h<pr.a?'a':'d';const rw=res.h>res.a?'h':res.h<res.a?'a':'d';const hit=isExact||(pw===rw);
     predsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px;">
@@ -2377,7 +2377,7 @@ function renderStats(){
     });
     const pct=totalPred>0?Math.round((hits/totalPred)*100):0;
     // best jornada (last 6 matches played)
-    const last6=MATCHES.filter(m=>S.results[m.id]?.done).slice(-6);
+    const last6=[...MATCHES,...BRACKET_MATCHES].filter(m=>S.results[m.id]?.done).slice(-6);
     let j6pts=0;
     last6.forEach(m=>{
       const res=S.results[m.id];const pred=pr[m.id];if(!pred)return;
@@ -2450,7 +2450,7 @@ function renderStats(){
 // CARRERA POR EL TÍTULO
 function renderCarrera(){
   const el=document.getElementById('carrera-wrap');if(!el)return;
-  const doneMids=MATCHES.filter(m=>S.results[m.id]?.done);
+  const doneMids=[...MATCHES,...BRACKET_MATCHES].filter(m=>S.results[m.id]?.done);
 
   // Build cumulative snapshots
   const snapshots=[];
@@ -2591,7 +2591,7 @@ const BRACKET_MATCHES=[
 function renderMundial(){
   const teamStats={};
   GROUPS.forEach(g=>g.teams.forEach(t=>{teamStats[t.n]={flag:t.f,group:g.id,pts:0,gf:0,ga:0,played:0};}));
-  MATCHES.filter(m=>m.gr.length===1&&S.results[m.id]?.done).forEach(m=>{
+  [...MATCHES,...BRACKET_MATCHES].filter(m=>S.results[m.id]?.done).forEach(m=>{
     const res=S.results[m.id];
     const h=teamStats[m.h.n];const a=teamStats[m.a.n];
     if(!h||!a)return;

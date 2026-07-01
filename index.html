@@ -1605,11 +1605,11 @@ function calcPts(pid){
   return{pts,exact,wins};
 }
 function getLast5(pid){
-  const pr=S.preds[pid]||{};const allM=[...MATCHES,...BRACKET_MATCHES];const done=allM.filter(m=>S.results[m.id]?.done).slice(-5);
+  const pr=S.preds[pid]||{};const allM=[...MATCHES,...BRACKET_MATCHES].sort((a,b)=>new Date(a.dt+"T"+(a.tm||"00:00")+":00")-new Date(b.dt+"T"+(b.tm||"00:00")+":00"));const done=allM.filter(m=>S.results[m.id]?.done).slice(-5);
   return done.map(m=>{const res=S.results[m.id];const p=pr[m.id];if(!p)return'empty';if(p.h===res.h&&p.a===res.a)return'exact';const pw=p.h>p.a?'h':p.h<p.a?'a':'d';const rw=res.h>res.a?'h':res.h<res.a?'a':'d';return pw===rw?'win':'loss';});
 }
 function getStreak(pid){
-  const pr=S.preds[pid]||{};const done=[...MATCHES,...BRACKET_MATCHES].filter(m=>S.results[m.id]?.done).reverse();let s=0;
+  const pr=S.preds[pid]||{};const done=[...MATCHES,...BRACKET_MATCHES].sort((a,b)=>new Date(a.dt+"T"+(a.tm||"00:00")+":00")-new Date(b.dt+"T"+(b.tm||"00:00")+":00")).filter(m=>S.results[m.id]?.done).reverse();let s=0;
   for(const m of done){const res=S.results[m.id];const p=pr[m.id];if(!p)break;const pw=p.h>p.a?'h':p.h<p.a?'a':'d';const rw=res.h>res.a?'h':res.h<res.a?'a':'d';if(p.h===res.h&&p.a===res.a||pw===rw)s++;else break;}return s;
 }
 
@@ -1757,10 +1757,11 @@ window.showPlayerModal=function(pid){
   const p=PLAYERS.find(x=>x.id===pid);if(!p)return;
   const{pts,exact,wins}=calcPts(pid);
   const gol=S.golpicks[pid];
-  const doneMids=Object.keys(S.results).filter(mid=>S.results[mid]?.done);
+  const allMatchesSorted=[...MATCHES,...BRACKET_MATCHES].sort((a,b)=>new Date(a.dt+"T"+(a.tm||"00:00")+":00")-new Date(b.dt+"T"+(b.tm||"00:00")+":00"));
+  const doneMids=allMatchesSorted.filter(m=>S.results[m.id]?.done).slice(-6).reverse();
   let predsHtml='';
-  doneMids.slice(-6).reverse().forEach(mid=>{
-    const m=[...MATCHES,...BRACKET_MATCHES].find(x=>x.id===mid);if(!m)return;
+  doneMids.forEach(m=>{
+    const mid=m.id;
     const res=S.results[mid];const pr=(S.preds[pid]||{})[mid];if(!pr)return;
     const isExact=pr.h===res.h&&pr.a===res.a;const pw=pr.h>pr.a?'h':pr.h<pr.a?'a':'d';const rw=res.h>res.a?'h':res.h<res.a?'a':'d';const hit=isExact||(pw===rw);
     predsHtml+=`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px;">
@@ -2377,7 +2378,7 @@ function renderStats(){
     });
     const pct=totalPred>0?Math.round((hits/totalPred)*100):0;
     // best jornada (last 6 matches played)
-    const last6=[...MATCHES,...BRACKET_MATCHES].filter(m=>S.results[m.id]?.done).slice(-6);
+    const last6=[...MATCHES,...BRACKET_MATCHES].sort((a,b)=>new Date(a.dt+"T"+(a.tm||"00:00")+":00")-new Date(b.dt+"T"+(b.tm||"00:00")+":00")).filter(m=>S.results[m.id]?.done).slice(-6);
     let j6pts=0;
     last6.forEach(m=>{
       const res=S.results[m.id];const pred=pr[m.id];if(!pred)return;
@@ -2450,7 +2451,7 @@ function renderStats(){
 // CARRERA POR EL TÍTULO
 function renderCarrera(){
   const el=document.getElementById('carrera-wrap');if(!el)return;
-  const doneMids=[...MATCHES,...BRACKET_MATCHES].filter(m=>S.results[m.id]?.done);
+  const doneMids=[...MATCHES,...BRACKET_MATCHES].sort((a,b)=>new Date(a.dt+"T"+(a.tm||"00:00")+":00")-new Date(b.dt+"T"+(b.tm||"00:00")+":00")).filter(m=>S.results[m.id]?.done);
 
   // Build cumulative snapshots
   const snapshots=[];

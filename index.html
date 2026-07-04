@@ -1274,13 +1274,14 @@ function renderBracketContent(){
     if(typeof label==='object'&&label.n)return label;
     if(typeof label==='string'&&label.startsWith('Gan.')){
       const srcId=label.replace('Gan.','');
-      const w=S.bracketResults[srcId]||myPicks[srcId];
+      // User pick takes priority in picks view - real result used only for scoring
+      const w=myPicks[srcId]||S.bracketResults[srcId];
       if(w){const nw=normTeam(w);const si=nw.indexOf(' ');return si>0?{f:nw.slice(0,si),n:nw.slice(si+1)}:{f:'',n:nw};}
     }
     if(typeof label==='string'&&label.startsWith('Perd.')){
       const srcId=label.replace('Perd.','');
       // The loser = the team in srcId that was NOT the winner
-      const winner=S.bracketResults[srcId]||myPicks[srcId];
+      const winner=myPicks[srcId]||S.bracketResults[srcId];
       const src=findBracketMatch(srcId);
       if(winner&&src){
         const th=pickResolve(src.h);
@@ -1399,12 +1400,12 @@ function renderBracketCuadro(){
     if(typeof label==='object'&&label.n)return label;
     if(typeof label==='string'&&label.startsWith('Gan.')){
       const srcId=label.replace('Gan.','');
-      const winner=S.bracketResults[srcId]||myPicks[srcId];
+      const winner=myPicks[srcId];
       if(winner){const nw=normTeam(winner);const si=nw.indexOf(' ');return si>0?{f:nw.slice(0,si),n:nw.slice(si+1)}:{f:'',n:nw};}
     }
     if(typeof label==='string'&&label.startsWith('Perd.')){
       const srcId=label.replace('Perd.','');
-      const winner=S.bracketResults[srcId]||myPicks[srcId];
+      const winner=myPicks[srcId];
       const src=findBracketMatch(srcId);
       if(winner&&src){
         const th=cuadroResolve(src.h);const ta=cuadroResolve(src.a);

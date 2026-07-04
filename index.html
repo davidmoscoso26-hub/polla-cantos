@@ -1268,6 +1268,8 @@ function renderBracketContent(){
   const viewPid=bracketViewPlayer||S.curUser;
   const isOwnBracket=viewPid===S.curUser;
   const myPicks=S.bracketPicks[viewPid]||{};
+  // Debug
+  console.log('cuadro viewPid:',viewPid,'picks count:',Object.keys(myPicks).length,'sample:',Object.entries(myPicks).slice(0,3));
 
   // Resolve using user picks to propagate teams through the tree
   function pickResolve(label){

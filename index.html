@@ -528,11 +528,11 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
     </div>
     <div id="bracket-lock-banner"></div>
     <div style="display:flex;gap:6px;margin:12px 0;">
-      <div id="brkt-tab-cuadro" onclick="switchBracketTab('cuadro')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🗺️ Cuadro</div>
-      <div id="brkt-tab-picks" onclick="switchBracketTab('picks')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🎯 Mis Picks</div>
+      <div id="brkt-tab-picks" onclick="switchBracketTab('picks')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🎯 Mis Picks</div>
+      <div id="brkt-tab-cuadro" onclick="switchBracketTab('cuadro')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🗺️ Cuadro</div>
     </div>
+    <div id="bracket-player-selector" style="margin-bottom:10px;display:none;"></div>
     <div id="bracket-content"></div>
-    <div id="bracket-player-selector" style="margin-bottom:10px;"></div>
     <div id="bracket-cuadro" style="display:none;"></div>
     <div class="ptbl" style="margin-top:14px;">
       <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Puntos del bracket · acertar quién avanza</div>
@@ -1168,7 +1168,7 @@ function getBracketMatchTeams(m){
     if(typeof label==='object'&&label.n)return label;
     if(typeof label==='string'&&label.startsWith('Gan.')){
       const w=S.bracketResults[label.replace('Gan.','')];
-      if(w){const f=w.split(' ')[0];const n=w.split(' ').slice(1).join(' ');return {n,f};}
+      if(w){const nw=normTeam(w);const si=nw.indexOf(' ');return si>0?{f:nw.slice(0,si),n:nw.slice(si+1)}:{f:'',n:nw};}
     }
     if(typeof label==='string'&&label.startsWith('Perd.')){
       const srcId=label.replace('Perd.','');
@@ -1190,7 +1190,7 @@ function getBracketMatchTeams(m){
 }
 
 
-let bracketTab='cuadro';
+let bracketTab='picks';
 let bracketViewPlayer=null; // null = own picks
 
 function renderBracketPlayerSelector(){
@@ -1226,20 +1226,20 @@ window.switchBracketTab=function(tab){
   const pc=document.getElementById('bracket-content');
   const cc=document.getElementById('bracket-cuadro');
   const sel=document.getElementById('bracket-player-selector');
-  if(tab==='cuadro'){
-    btnC.style.background='rgba(34,197,94,0.15)';btnC.style.borderColor='rgba(34,197,94,0.3)';btnC.style.color='var(--g)';
-    btnP.style.background='var(--card)';btnP.style.borderColor='var(--border)';btnP.style.color='var(--muted)';
-    pc.style.display='none';cc.style.display='block';
-    if(sel)sel.style.display='flex';
-    if(!bracketViewPlayer)bracketViewPlayer=S.curUser;
-    renderBracketPlayerSelector();
-    renderBracketCuadro();
-  }else{
+  if(tab==='picks'){
     btnP.style.background='rgba(34,197,94,0.15)';btnP.style.borderColor='rgba(34,197,94,0.3)';btnP.style.color='var(--g)';
     btnC.style.background='var(--card)';btnC.style.borderColor='var(--border)';btnC.style.color='var(--muted)';
     pc.style.display='block';cc.style.display='none';
-    if(sel)sel.style.display='none';
+    if(sel)sel.style.display='flex';
+    if(!bracketViewPlayer)bracketViewPlayer=S.curUser;
+    renderBracketPlayerSelector();
     renderBracketContent();
+  }else{
+    btnC.style.background='rgba(34,197,94,0.15)';btnC.style.borderColor='rgba(34,197,94,0.3)';btnC.style.color='var(--g)';
+    btnP.style.background='var(--card)';btnP.style.borderColor='var(--border)';btnP.style.color='var(--muted)';
+    pc.style.display='none';cc.style.display='block';
+    if(sel)sel.style.display='none';
+    renderBracketCuadro();
   }
 };
 
@@ -1275,7 +1275,7 @@ function renderBracketContent(){
     if(typeof label==='string'&&label.startsWith('Gan.')){
       const srcId=label.replace('Gan.','');
       const w=S.bracketResults[srcId]||myPicks[srcId];
-      if(w){const p=normTeam(w).split(' ');return{f:p[0],n:p.slice(1).join(' ')};}
+      if(w){const nw=normTeam(w);const si=nw.indexOf(' ');return si>0?{f:nw.slice(0,si),n:nw.slice(si+1)}:{f:'',n:nw};}
     }
     if(typeof label==='string'&&label.startsWith('Perd.')){
       const srcId=label.replace('Perd.','');
@@ -1400,7 +1400,7 @@ function renderBracketCuadro(){
     if(typeof label==='string'&&label.startsWith('Gan.')){
       const srcId=label.replace('Gan.','');
       const winner=S.bracketResults[srcId]||myPicks[srcId];
-      if(winner){const parts=normTeam(winner).split(' ');return{f:parts[0],n:parts.slice(1).join(' ')};}
+      if(winner){const nw=normTeam(winner);const si=nw.indexOf(' ');return si>0?{f:nw.slice(0,si),n:nw.slice(si+1)}:{f:'',n:nw};}
     }
     if(typeof label==='string'&&label.startsWith('Perd.')){
       const srcId=label.replace('Perd.','');
@@ -1433,7 +1433,11 @@ function renderBracketCuadro(){
     const aName=typeof m.a==='object'?m.a.n:(teams.a?teams.a.n:null);
     const hFlag=typeof m.h==='object'?m.h.f:(teams.h?teams.h.f:'❓');
     const aFlag=typeof m.a==='object'?m.a.f:(teams.a?teams.a.f:'❓');
-    const userPick=(S.bracketPicks[S.curUser]||{})[m.id];
+    // User pick for this specific match (may have been set directly)
+    const directPick=myPicks[m.id];
+    const userPick=directPick||null;
+    // If pick exists but teams unknown via propagation, try to show pick team
+    const pickResolved=directPick?{f:normTeam(directPick).split(' ')[0],n:normTeam(directPick).split(' ').slice(1).join(' ')}:null;
     const result=S.bracketResults[m.id];
     const hSel=userPick&&hName&&userPick.includes(hName);
     const aSel=userPick&&aName&&userPick.includes(aName);
@@ -1530,7 +1534,7 @@ window.nav=function(id){
   if(id==='partidos'){buildFilterTabs();renderMatches();}
   if(id==='picks'&&!S.rendered.picks){renderGroups();renderGol();renderEcuPick();S.rendered.picks=true;}
   if(id==='mundial'&&!S.rendered.mundial){renderMundial();renderCarrera();S.rendered.mundial=true;}
-  if(id==='bracket'){if(!bracketViewPlayer)bracketViewPlayer=S.curUser;const sel=document.getElementById('bracket-player-selector');if(sel)sel.style.display='flex';renderBracketPlayerSelector();if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();showBracketReminder();}
+  if(id==='bracket'){if(!bracketViewPlayer)bracketViewPlayer=S.curUser;setTimeout(()=>{const sel=document.getElementById('bracket-player-selector');if(sel&&bracketTab==='picks')sel.style.display='flex';renderBracketPlayerSelector();if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();showBracketReminder();},50);}
 
 window.switchMundialTab=function(tab){
   ['mundial','stats','playoff'].forEach(t=>{
@@ -1813,8 +1817,10 @@ window.showPlayerModal=function(pid){
   const ecuPhase=ecu?ECU_PHASES.find(p=>p.id===ecu):null;
   // Champion pick from bracket
   const champPick=(S.bracketPicks[pid]||{})['bf104'];
-  const champName=champPick?normTeam(champPick).split(' ').slice(1).join(' '):null;
-  const champFlag=champPick?normTeam(champPick).split(' ')[0]:null;
+  const champNorm=champPick?normTeam(champPick):null;
+  const champSpaceIdx=champNorm?champNorm.indexOf(' '):-1;
+  const champFlag=champNorm&&champSpaceIdx>0?champNorm.slice(0,champSpaceIdx):null;
+  const champName=champNorm&&champSpaceIdx>0?champNorm.slice(champSpaceIdx+1):champNorm;
   document.getElementById('modal-content').innerHTML=`
     <div style="text-align:center;margin-bottom:14px;">${avCircle(p,72,'av-ring-default','')}</div>
     <div style="text-align:center;font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;margin-bottom:14px;">${p.name}</div>

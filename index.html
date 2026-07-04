@@ -529,9 +529,11 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
     <div id="bracket-lock-banner"></div>
     <div style="display:flex;gap:6px;margin:12px 0;">
       <div id="brkt-tab-picks" onclick="switchBracketTab('picks')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🎯 Mis Picks</div>
+      <div id="brkt-tab-cuadro" onclick="switchBracketTab('cuadro')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🗺️ Cuadro</div>
     </div>
     <div id="bracket-player-selector" style="margin-bottom:10px;display:none;"></div>
     <div id="bracket-content"></div>
+    <div id="bracket-cuadro" style="display:none;"></div>
     <div class="ptbl" style="margin-top:14px;">
       <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Puntos del bracket · acertar quién avanza</div>
       <div class="prow"><span class="plbl">Dieciseisavos (R32)</span><span class="pval">3 pts</span></div>
@@ -1218,12 +1220,29 @@ window.setBracketViewer=function(pid){
   if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();
 };
 window.switchBracketTab=function(tab){
-  bracketTab='picks';
+  bracketTab=tab;
+  const btnP=document.getElementById('brkt-tab-picks');
+  const btnC=document.getElementById('brkt-tab-cuadro');
+  const pc=document.getElementById('bracket-content');
+  const cc=document.getElementById('bracket-cuadro');
   const sel=document.getElementById('bracket-player-selector');
-  if(sel)sel.style.display='flex';
-  if(!bracketViewPlayer)bracketViewPlayer=S.curUser;
-  renderBracketPlayerSelector();
-  renderBracketContent();
+  if(tab==='picks'){
+    btnP.style.background='rgba(34,197,94,0.15)';btnP.style.borderColor='rgba(34,197,94,0.3)';btnP.style.color='var(--g)';
+    btnC.style.background='var(--card)';btnC.style.borderColor='var(--border)';btnC.style.color='var(--muted)';
+    pc.style.display='block';cc.style.display='none';
+    if(sel)sel.style.display='flex';
+    if(!bracketViewPlayer)bracketViewPlayer=S.curUser;
+    renderBracketPlayerSelector();
+    renderBracketContent();
+  }else{
+    btnC.style.background='rgba(34,197,94,0.15)';btnC.style.borderColor='rgba(34,197,94,0.3)';btnC.style.color='var(--g)';
+    btnP.style.background='var(--card)';btnP.style.borderColor='var(--border)';btnP.style.color='var(--muted)';
+    pc.style.display='none';cc.style.display='block';
+    if(sel)sel.style.display='none';
+    if(!bracketViewPlayer)bracketViewPlayer=S.curUser;
+    renderBracketPlayerSelector();
+    renderBracketCuadro();
+  }
 };
 
 function bracketLockBanner(){
@@ -1481,7 +1500,7 @@ window.nav=function(id){
   if(id==='partidos'){buildFilterTabs();renderMatches();}
   if(id==='picks'&&!S.rendered.picks){renderGroups();renderGol();renderEcuPick();S.rendered.picks=true;}
   if(id==='mundial'&&!S.rendered.mundial){renderMundial();renderCarrera();S.rendered.mundial=true;}
-  if(id==='bracket'){if(!bracketViewPlayer)bracketViewPlayer=S.curUser;setTimeout(()=>{const sel=document.getElementById('bracket-player-selector');if(sel)sel.style.display='flex';renderBracketPlayerSelector();renderBracketContent();showBracketReminder();},50);}
+  if(id==='bracket'){if(!bracketViewPlayer)bracketViewPlayer=S.curUser;setTimeout(()=>{const sel=document.getElementById('bracket-player-selector');if(sel)sel.style.display='flex';renderBracketPlayerSelector();if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();showBracketReminder();},50);}
 
 window.switchMundialTab=function(tab){
   ['mundial','stats','playoff'].forEach(t=>{
@@ -3145,6 +3164,113 @@ function renderPlayoffBracket(){
   }catch(e){
     el.innerHTML='<div style="padding:20px;color:var(--muted);text-align:center;">Cuadro disponible cuando empiecen los eliminatorios.</div>';
   }
+}
+
+function renderBracketCuadro(){
+  const el=document.getElementById('bracket-cuadro');if(!el)return;
+  const viewPid=bracketViewPlayer||S.curUser;
+  const picks=S.bracketPicks[viewPid]||{};
+
+  // Get team info for a match ID from picks
+  function pickTeam(mid){
+    const p=picks[mid];if(!p||!p.trim())return null;
+    const n=normTeam(p);const si=n.indexOf(' ');
+    return si>0?{f:n.slice(0,si),n:n.slice(si+1)}:{f:'',n:n};
+  }
+
+  // Get actual teams for R32 from BRACKET_ROUNDS data
+  function r32Teams(mid){
+    const r32=BRACKET_ROUNDS.find(r=>r.id==='r32');
+    const m=r32&&r32.matches.find(x=>x.id===mid);
+    if(!m)return{h:null,a:null};
+    return{
+      h:typeof m.h==='object'?m.h:null,
+      a:typeof m.a==='object'?m.a:null
+    };
+  }
+
+  function cell(mid,showTeams){
+    const pick=pickTeam(mid);
+    const result=S.bracketResults[mid];
+    const correct=pick&&result&&normTeam(result)===normTeam(pick.f+' '+pick.n);
+    const wrong=pick&&result&&!correct;
+    const border=result?(correct?'rgba(34,197,94,0.4)':'rgba(239,68,68,0.3)'):pick?'rgba(34,197,94,0.25)':'rgba(255,255,255,0.07)';
+    const bg=result?(correct?'rgba(34,197,94,0.07)':'rgba(239,68,68,0.04)'):pick?'rgba(34,197,94,0.03)':'rgba(255,255,255,0.02)';
+
+    let inner='';
+    if(pick){
+      inner='<span style="font-size:13px;">'+pick.f+'</span>'
+        +'<span style="font-size:8.5px;font-weight:700;color:'+(correct?'var(--g)':wrong?'#f87171':'#fff')+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+pick.n.slice(0,11)+'</span>'
+        +(correct?'<span style="font-size:8px;color:var(--g);">✓</span>':wrong?'<span style="font-size:8px;color:#f87171;">✗</span>':'');
+    }else{
+      inner='<span style="font-size:8px;color:rgba(255,255,255,0.2);width:100%;text-align:center;">—</span>';
+    }
+
+    // For R32: show both teams small, highlight picked one
+    if(showTeams){
+      const t=r32Teams(mid);
+      const hPicked=pick&&t.h&&normTeam(pick.f+' '+pick.n)===normTeam(t.h.f+' '+t.h.n);
+      const aPicked=pick&&t.a&&normTeam(pick.f+' '+pick.n)===normTeam(t.a.f+' '+t.a.n);
+      return '<div style="background:'+bg+';border:1.5px solid '+border+';border-radius:6px;padding:1px;width:106px;">'
+        +'<div style="display:flex;align-items:center;gap:3px;padding:2px 4px;background:'+(hPicked?'rgba(34,197,94,0.1)':'transparent')+';border-radius:4px;">'
+          +'<span style="font-size:10px;">'+(t.h?t.h.f:'❓')+'</span>'
+          +'<span style="font-size:8px;font-weight:'+(hPicked?700:400)+';color:'+(hPicked?'#fff':'rgba(255,255,255,0.4)')+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(t.h?t.h.n.slice(0,10):'?')+'</span>'
+          +(hPicked?'<span style="font-size:7px;color:var(--g);">✓</span>':'')
+        +'</div>'
+        +'<div style="height:1px;background:rgba(255,255,255,0.05);"></div>'
+        +'<div style="display:flex;align-items:center;gap:3px;padding:2px 4px;background:'+(aPicked?'rgba(34,197,94,0.1)':'transparent')+';border-radius:4px;">'
+          +'<span style="font-size:10px;">'+(t.a?t.a.f:'❓')+'</span>'
+          +'<span style="font-size:8px;font-weight:'+(aPicked?700:400)+';color:'+(aPicked?'#fff':'rgba(255,255,255,0.4)')+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(t.a?t.a.n.slice(0,10):'?')+'</span>'
+          +(aPicked?'<span style="font-size:7px;color:var(--g);">✓</span>':'')
+        +'</div>'
+      +'</div>';
+    }
+
+    return '<div style="background:'+bg+';border:1.5px solid '+border+';border-radius:6px;padding:4px 6px;width:106px;min-height:28px;display:flex;align-items:center;gap:4px;">'+inner+'</div>';
+  }
+
+  const r32=BRACKET_ROUNDS.find(r=>r.id==='r32').matches;
+  const r16=BRACKET_ROUNDS.find(r=>r.id==='r16').matches;
+  const r8=BRACKET_ROUNDS.find(r=>r.id==='r8').matches;
+  const r4=BRACKET_ROUNDS.find(r=>r.id==='r4').matches;
+  const fin=BRACKET_ROUNDS.find(r=>r.id==='r2').matches[0];
+  const r3m=BRACKET_ROUNDS.find(r=>r.id==='r3');
+  const third=r3m?r3m.matches[0]:null;
+
+  function col(mids,title,showTeams){
+    let h='<div style="display:flex;flex-direction:column;gap:5px;">';
+    if(title)h+='<div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:2px;">'+title+'</div>';
+    mids.forEach(id=>{h+=cell(id,showTeams);});
+    return h+'</div>';
+  }
+
+  const leftIds32=['br074','br077','br073','br075','br083','br084','br081','br082'];
+  const rightIds32=['br076','br078','br079','br080','br086','br088','br085','br087'];
+  const leftR16=['bo089','bo090','bo093','bo094'];
+  const rightR16=['bo091','bo092','bo095','bo096'];
+  const leftR8=['bq097','bq098'];
+  const rightR8=['bq099','bq100'];
+
+  const html='<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">'
+    +'<div style="display:flex;gap:5px;align-items:flex-start;min-width:720px;">'
+    +col(leftIds32,'R32',true)
+    +col(leftR16,'8vos',false)
+    +col(leftR8,'4tos',false)
+    +'<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:20px;">'
+      +'<div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;">Semi</div>'
+      +cell(r4[0].id,false)
+      +'<div style="font-size:8px;font-weight:800;color:#facc15;text-transform:uppercase;letter-spacing:1px;">Final 🏆</div>'
+      +cell(fin.id,false)
+      +(third?'<div style="font-size:8px;font-weight:800;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;">3er</div>'+cell(third.id,false):'')
+      +'<div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;">Semi</div>'
+      +cell(r4[1].id,false)
+    +'</div>'
+    +col(rightR8,'4tos',false)
+    +col(rightR16,'8vos',false)
+    +col(rightIds32,'R32',true)
+    +'</div></div>';
+
+  el.innerHTML=html;
 }
 
 async function boot(){

@@ -1280,6 +1280,7 @@ function renderBracketContent(){
       const srcId=label.replace('Gan.','');
       // User pick takes priority in picks view - real result used only for scoring
       const w=myPicks[srcId]||S.bracketResults[srcId];
+      if(srcId==='br075')console.log('pickResolve br075: myPicks=',myPicks[srcId],'bracketResults=',S.bracketResults[srcId]);
       if(w){const nw=normTeam(w);const si=nw.indexOf(' ');return si>0?{f:nw.slice(0,si),n:nw.slice(si+1)}:{f:'',n:nw};}
     }
     if(typeof label==='string'&&label.startsWith('Perd.')){

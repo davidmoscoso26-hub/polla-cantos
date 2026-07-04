@@ -531,6 +531,7 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
       <div id="brkt-tab-picks" onclick="switchBracketTab('picks')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🎯 Mis Picks</div>
       <div id="brkt-tab-cuadro" onclick="switchBracketTab('cuadro')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🗺️ Cuadro</div>
     </div>
+    <div id="bracket-player-selector" style="margin-bottom:10px;display:none;"></div>
     <div id="bracket-content"></div>
     <div id="bracket-cuadro" style="display:none;"></div>
     <div class="ptbl" style="margin-top:14px;">
@@ -708,7 +709,10 @@ async function sbGet(q){return sb(q);}
 async function sbUpsert(table,data){return sb(table,{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify(data)});}
 async function sbUpdate(table,filter,data){
   const upd=await sb(table+'?'+filter,{method:'PATCH',headers:{'Prefer':'return=representation'},body:JSON.stringify(data)});
-  if(!upd||upd.length===0)await sb(table,{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify(data)});
+  // Only POST if PATCH confirmed no rows found (null means error, [] means no match)
+  if(Array.isArray(upd)&&upd.length===0){
+    await sb(table,{method:'POST',headers:{'Prefer':'return=representation,resolution=ignore-duplicates'},body:JSON.stringify(data)});
+  }
 }
 
 async function sbDelete(table,filter){
@@ -1059,30 +1063,30 @@ const BRACKET_ROUNDS=[
   ]},
   {id:'r16', label:'Octavos de final', pts:5, unlock:BRACKET_LOCK_DT,
    matches:[
-    {id:'bo089',h:'Gan.br074',a:'Gan.br077',dt:'2026-07-04',tm:'12:00'},
-    {id:'bo090',h:'Gan.br073',a:'Gan.br075',dt:'2026-07-04',tm:'16:00'},
-    {id:'bo093',h:'Gan.br083',a:'Gan.br084',dt:'2026-07-05',tm:'12:00'},
-    {id:'bo094',h:'Gan.br081',a:'Gan.br082',dt:'2026-07-05',tm:'16:00'},
-    {id:'bo091',h:'Gan.br076',a:'Gan.br078',dt:'2026-07-06',tm:'12:00'},
-    {id:'bo092',h:'Gan.br079',a:'Gan.br080',dt:'2026-07-06',tm:'16:00'},
-    {id:'bo095',h:'Gan.br086',a:'Gan.br088',dt:'2026-07-07',tm:'12:00'},
-    {id:'bo096',h:'Gan.br085',a:'Gan.br087',dt:'2026-07-07',tm:'16:00'},
+    {id:'bo089',h:{n:'Paraguay',f:'🇵🇾'},a:{n:'Francia',f:'🇫🇷'},dt:'2026-07-04',tm:'16:00'},
+    {id:'bo090',h:{n:'Canadá',f:'🇨🇦'},a:{n:'Marruecos',f:'🇲🇦'},dt:'2026-07-04',tm:'12:00'},
+    {id:'bo091',h:{n:'Brasil',f:'🇧🇷'},a:{n:'Noruega',f:'🇳🇴'},dt:'2026-07-05',tm:'15:00'},
+    {id:'bo092',h:{n:'México',f:'🇲🇽'},a:{n:'Inglaterra',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},dt:'2026-07-06',tm:'12:00'},
+    {id:'bo093',h:{n:'España',f:'🇪🇸'},a:{n:'Portugal',f:'🇵🇹'},dt:'2026-07-06',tm:'14:00'},
+    {id:'bo094',h:{n:'USA',f:'🇺🇸'},a:{n:'Bélgica',f:'🇧🇪'},dt:'2026-07-06',tm:'16:00'},
+    {id:'bo095',h:{n:'Argentina',f:'🇦🇷'},a:{n:'Australia',f:'🇦🇺'},dt:'2026-07-07',tm:'11:00'},
+    {id:'bo096',h:{n:'Suiza',f:'🇨🇭'},a:{n:'Colombia',f:'🇨🇴'},dt:'2026-07-07',tm:'15:00'},
   ]},
   {id:'r8', label:'Cuartos de final', pts:7, unlock:BRACKET_LOCK_DT,
    matches:[
-    {id:'bq097',h:'Gan.bo089',a:'Gan.bo090',dt:'2026-07-09',tm:'12:00'},
-    {id:'bq098',h:'Gan.bo093',a:'Gan.bo094',dt:'2026-07-09',tm:'16:00'},
-    {id:'bq099',h:'Gan.bo091',a:'Gan.bo092',dt:'2026-07-10',tm:'12:00'},
-    {id:'bq100',h:'Gan.bo095',a:'Gan.bo096',dt:'2026-07-10',tm:'16:00'},
+    {id:'bq097',h:'Gan.bo089',a:'Gan.bo090',dt:'2026-07-09',tm:'15:00'},
+    {id:'bq098',h:'Gan.bo093',a:'Gan.bo094',dt:'2026-07-10',tm:'14:00'},
+    {id:'bq099',h:'Gan.bo091',a:'Gan.bo092',dt:'2026-07-11',tm:'16:00'},
+    {id:'bq100',h:'Gan.bo095',a:'Gan.bo096',dt:'2026-07-11',tm:'20:00'},
   ]},
   {id:'r4', label:'Semifinales', pts:10, unlock:BRACKET_LOCK_DT,
    matches:[
-    {id:'bs101',h:'Gan.bq097',a:'Gan.bq098',dt:'2026-07-14',tm:'15:00'},
-    {id:'bs102',h:'Gan.bq099',a:'Gan.bq100',dt:'2026-07-15',tm:'15:00'},
+    {id:'bs101',h:'Gan.bq097',a:'Gan.bq098',dt:'2026-07-14',tm:'14:00'},
+    {id:'bs102',h:'Gan.bq099',a:'Gan.bq100',dt:'2026-07-15',tm:'14:00'},
   ]},
   {id:'r3', label:'Tercer puesto', pts:5, unlock:BRACKET_LOCK_DT,
    matches:[
-    {id:'bt103',h:'Perd.bs101',a:'Perd.bs102',dt:'2026-07-18',tm:'15:00'},
+    {id:'bt103',h:'Perd.bs101',a:'Perd.bs102',dt:'2026-07-18',tm:'16:00'},
   ]},
   {id:'r2', label:'Final', pts:15, unlock:BRACKET_LOCK_DT,
    matches:[
@@ -1187,21 +1191,54 @@ function getBracketMatchTeams(m){
 
 
 let bracketTab='picks';
+let bracketViewPlayer=null; // null = own picks
+
+function renderBracketPlayerSelector(){
+  const el=document.getElementById('bracket-player-selector');if(!el)return;
+  const viewing=bracketViewPlayer||S.curUser;
+  el.innerHTML='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
+    +'<span style="font-size:11px;color:var(--muted);font-weight:600;">Ver bracket de:</span>'
+    +PLAYERS.map(p=>{
+      const isSel=viewing===p.id;
+      const photo=getPhoto(p.id);
+      return '<div data-pid="'+p.id+'" class="brkt-viewer-btn" style="display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:20px;cursor:pointer;border:1.5px solid '+(isSel?p.color:'rgba(255,255,255,0.08)')+';background:'+(isSel?'rgba(255,255,255,0.06)':'transparent')+';transition:all 0.15s;">'
+        +(photo?'<img src="'+photo+'" style="width:18px;height:18px;border-radius:50%;object-fit:cover;border:1.5px solid '+p.color+';">'
+          :'<div style="width:18px;height:18px;border-radius:50%;background:'+p.color+';display:flex;align-items:center;justify-content:center;font-size:9px;">'+p.emoji+'</div>')
+        +'<span style="font-size:11px;font-weight:'+(isSel?'700':'500')+';color:'+(isSel?'#fff':'rgba(255,255,255,0.5)')+';">'+p.name.split(' ')[0]+'</span>'
+        +'</div>';
+    }).join('')
+    +'</div>';
+}
+
+document.addEventListener('click',function(e){
+  const btn=e.target.closest('.brkt-viewer-btn');
+  if(btn&&btn.dataset.pid)setBracketViewer(btn.dataset.pid);
+});
+window.setBracketViewer=function(pid){
+  bracketViewPlayer=pid;
+  renderBracketPlayerSelector();
+  renderBracketContent();
+};
 window.switchBracketTab=function(tab){
   bracketTab=tab;
   const p=document.getElementById('brkt-tab-picks');
   const c=document.getElementById('brkt-tab-cuadro');
   const pc=document.getElementById('bracket-content');
   const cc=document.getElementById('bracket-cuadro');
+  const sel=document.getElementById('bracket-player-selector');
   if(tab==='picks'){
     p.style.background='rgba(34,197,94,0.15)';p.style.borderColor='rgba(34,197,94,0.3)';p.style.color='var(--g)';
     c.style.background='var(--card)';c.style.borderColor='var(--border)';c.style.color='var(--muted)';
     pc.style.display='block';cc.style.display='none';
+    if(sel)sel.style.display='flex';
+    if(!bracketViewPlayer)bracketViewPlayer=S.curUser;
+    renderBracketPlayerSelector();
     renderBracketContent();
   }else{
     c.style.background='rgba(34,197,94,0.15)';c.style.borderColor='rgba(34,197,94,0.3)';c.style.color='var(--g)';
     p.style.background='var(--card)';p.style.borderColor='var(--border)';p.style.color='var(--muted)';
     pc.style.display='none';cc.style.display='block';
+    if(sel)sel.style.display='none';
     renderBracketCuadro();
   }
 };
@@ -1228,7 +1265,9 @@ function renderBracketContent(){
   bracketLockBanner();
   const now=new Date();
   const locked=isBracketLocked();
-  const myPicks=S.bracketPicks[S.curUser]||{};
+  const viewPid=bracketViewPlayer||S.curUser;
+  const isOwnBracket=viewPid===S.curUser;
+  const myPicks=S.bracketPicks[viewPid]||{};
 
   // Resolve using user picks to propagate teams through the tree
   function pickResolve(label){
@@ -1271,13 +1310,13 @@ function renderBracketContent(){
       const aName=ta?ta.n:null;
       const hVal=th?normTeam(th.f+' '+th.n):null;
       const aVal=ta?normTeam(ta.f+' '+ta.n):null;
-      const userPick=!S.isVisitor?myPicks[m.id]:null;
+      const userPick=myPicks[m.id]||null;
       const result=S.bracketResults[m.id];
       const isDone=!!result;
       const matchDt=m.dt?new Date(m.dt+'T'+(m.tm||'00:00')+':00-05:00'):null;
       const matchStarted=matchDt&&now>=matchDt;
       const teamsKnown=!!(hName&&aName);
-      const canPick=!S.isVisitor&&!isDone&&teamsKnown&&!matchStarted&&!locked;
+      const canPick=isOwnBracket&&!S.isVisitor&&!isDone&&teamsKnown&&!matchStarted&&!locked;
       const hWin=userPick&&hName&&normTeam(userPick).includes(hName);
       const aWin=userPick&&aName&&normTeam(userPick).includes(aName);
       const hResWin=result&&hName&&normTeam(result).includes(hName);
@@ -1490,7 +1529,7 @@ window.nav=function(id){
   if(id==='partidos'){buildFilterTabs();renderMatches();}
   if(id==='picks'&&!S.rendered.picks){renderGroups();renderGol();renderEcuPick();S.rendered.picks=true;}
   if(id==='mundial'&&!S.rendered.mundial){renderMundial();renderCarrera();S.rendered.mundial=true;}
-  if(id==='bracket'){if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();showBracketReminder();}
+  if(id==='bracket'){if(!bracketViewPlayer)bracketViewPlayer=S.curUser;if(bracketTab==='cuadro')renderBracketCuadro();else{const sel=document.getElementById('bracket-player-selector');if(sel)sel.style.display='flex';renderBracketPlayerSelector();renderBracketContent();}showBracketReminder();}
 
 window.switchMundialTab=function(tab){
   ['mundial','stats','playoff'].forEach(t=>{
@@ -2586,6 +2625,15 @@ const BRACKET_MATCHES=[
   {id:'br088',h:{n:'Australia',f:'🇦🇺'},a:{n:'Egipto',f:'🇪🇬'},dt:'2026-07-03',tm:'13:00',gr:'R32'},
   {id:'br086',h:{n:'Argentina',f:'🇦🇷'},a:{n:'Cabo Verde',f:'🇨🇻'},dt:'2026-07-03',tm:'17:00',gr:'R32'},
   {id:'br087',h:{n:'Colombia',f:'🇨🇴'},a:{n:'Ghana',f:'🇬🇭'},dt:'2026-07-03',tm:'20:30',gr:'R32'},
+  // Octavos de final
+  {id:'bo089',h:{n:'Paraguay',f:'🇵🇾'},a:{n:'Francia',f:'🇫🇷'},dt:'2026-07-04',tm:'16:00',gr:'8VOS'},
+  {id:'bo090',h:{n:'Canadá',f:'🇨🇦'},a:{n:'Marruecos',f:'🇲🇦'},dt:'2026-07-04',tm:'12:00',gr:'8VOS'},
+  {id:'bo091',h:{n:'Brasil',f:'🇧🇷'},a:{n:'Noruega',f:'🇳🇴'},dt:'2026-07-05',tm:'15:00',gr:'8VOS'},
+  {id:'bo092',h:{n:'México',f:'🇲🇽'},a:{n:'Inglaterra',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},dt:'2026-07-06',tm:'12:00',gr:'8VOS'},
+  {id:'bo093',h:{n:'España',f:'🇪🇸'},a:{n:'Portugal',f:'🇵🇹'},dt:'2026-07-06',tm:'14:00',gr:'8VOS'},
+  {id:'bo094',h:{n:'USA',f:'🇺🇸'},a:{n:'Bélgica',f:'🇧🇪'},dt:'2026-07-06',tm:'16:00',gr:'8VOS'},
+  {id:'bo095',h:{n:'Argentina',f:'🇦🇷'},a:{n:'Australia',f:'🇦🇺'},dt:'2026-07-07',tm:'11:00',gr:'8VOS'},
+  {id:'bo096',h:{n:'Suiza',f:'🇨🇭'},a:{n:'Colombia',f:'🇨🇴'},dt:'2026-07-07',tm:'15:00',gr:'8VOS'},
 ];
 
 // MUNDIAL TABLE

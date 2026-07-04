@@ -1396,6 +1396,7 @@ function renderBracketCuadro(){
   const fin=BRACKET_ROUNDS.find(r=>r.id==='r2').matches;
   const viewPid=bracketViewPlayer||S.curUser;
   const myPicks=S.bracketPicks[viewPid]||{};
+  console.log("CUADRO viewPid:",viewPid,"picks:",Object.keys(myPicks).slice(0,5),"br074:",myPicks["br074"]);
 
   // Cuadro-specific resolver: uses user's picks to propagate through the tree
   function cuadroResolve(label){try{
@@ -1403,6 +1404,7 @@ function renderBracketCuadro(){
     if(typeof label==='string'&&label.startsWith('Gan.')){
       const srcId=label.replace('Gan.','');
       const winner=myPicks[srcId];
+      console.log("cuadroResolve Gan srcId:",srcId,"winner:",winner);
       if(winner){const nw=normTeam(winner);const si=nw.indexOf(' ');return si>0?{f:nw.slice(0,si),n:nw.slice(si+1)}:{f:'',n:nw};}
     }
     if(typeof label==='string'&&label.startsWith('Perd.')){

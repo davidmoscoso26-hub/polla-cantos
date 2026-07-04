@@ -1373,148 +1373,107 @@ window.saveBracketPick=async function(mid,team){
     await sbUpdate('bracket_picks','user_id=eq.'+S.curUser+'&match_id=eq.'+mid,{user_id:S.curUser,match_id:mid,team:normT});
     toast('✅ Pick guardado');
   }
-  if(bracketTab==='cuadro'){
-    // Preserve scroll position on cuadro
-    const wrap=document.querySelector('#bracket-cuadro [style*="overflow-x"]');
-    const scrollX=wrap?wrap.scrollLeft:0;
-    renderBracketCuadro();
-    requestAnimationFrame(()=>{
-      const w=document.querySelector('#bracket-cuadro [style*="overflow-x"]');
-      if(w)w.scrollLeft=scrollX;
-    });
-  }else renderBracketContent();
+  if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();
 };
 
 // Visual two-sided bracket
 function renderBracketCuadro(){
   const el=document.getElementById('bracket-cuadro');if(!el)return;
   try{
+  const viewPid=bracketViewPlayer||S.curUser;
+  const myPicks=S.bracketPicks[viewPid]||{};
+
+  // Simple resolver: just show the direct pick for each match, no propagation
+  function getPickTeam(mid){
+    const pick=myPicks[mid];
+    if(!pick||!pick.trim())return null;
+    const nw=normTeam(pick);
+    const si=nw.indexOf(' ');
+    if(si>0)return{f:nw.slice(0,si),n:nw.slice(si+1)};
+    return{f:'',n:nw};
+  }
+
+  // Get the two teams for a match (from BRACKET_ROUNDS data, not propagated)
+  function getMatchTeams(m){
+    if(typeof m.h==='object'&&m.h.n)return{h:m.h,a:m.a};
+    // For later rounds, teams are 'Gan.brXXX' strings - show generic
+    return{h:null,a:null};
+  }
+
+  function cell(m){
+    if(!m)return '<div style="height:38px;"></div>';
+    const pick=getPickTeam(m.id);
+    const result=S.bracketResults[m.id];
+    const teams=getMatchTeams(m);
+    const hTeam=teams.h;
+    const aTeam=teams.a;
+    // Determine pick correctness
+    const correct=pick&&result&&normTeam(result)===normTeam(pick.f+' '+pick.n);
+    const wrong=pick&&result&&!correct;
+    const borderC=result?(correct?'rgba(34,197,94,0.4)':'rgba(239,68,68,0.3)'):pick?'rgba(34,197,94,0.25)':'rgba(255,255,255,0.08)';
+    const bg=result?(correct?'rgba(34,197,94,0.06)':'rgba(239,68,68,0.04)'):pick?'rgba(34,197,94,0.03)':'var(--card)';
+
+    if(pick){
+      // Show the pick directly
+      return '<div style="background:'+bg+';border:1.5px solid '+borderC+';border-radius:6px;padding:4px 6px;width:102px;min-height:28px;display:flex;align-items:center;gap:4px;">'
+        +'<span style="font-size:13px;">'+pick.f+'</span>'
+        +'<span style="font-size:8.5px;font-weight:700;color:'+(correct?'var(--g)':wrong?'#f87171':'#fff')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">'+pick.n.slice(0,11)+'</span>'
+        +(correct?'<span style="font-size:8px;">✓</span>':wrong?'<span style="font-size:8px;">✗</span>':'')
+        +'</div>';
+    }else{
+      // No pick for this match
+      return '<div style="background:rgba(255,255,255,0.02);border:1.5px solid rgba(255,255,255,0.06);border-radius:6px;padding:4px 6px;width:102px;min-height:28px;display:flex;align-items:center;justify-content:center;">'
+        +'<span style="font-size:9px;color:rgba(255,255,255,0.2);">sin pick</span>'
+        +'</div>';
+    }
+  }
+
   const r32=BRACKET_ROUNDS.find(r=>r.id==='r32').matches;
   const r16=BRACKET_ROUNDS.find(r=>r.id==='r16').matches;
   const r8=BRACKET_ROUNDS.find(r=>r.id==='r8').matches;
   const r4=BRACKET_ROUNDS.find(r=>r.id==='r4').matches;
-  const fin=BRACKET_ROUNDS.find(r=>r.id==='r2').matches;
-  const viewPid=bracketViewPlayer||S.curUser;
-  const myPicks=S.bracketPicks[viewPid]||{};
-  console.log("CUADRO viewPid:",viewPid,"picks:",Object.keys(myPicks).slice(0,5),"br074:",myPicks["br074"]);
-
-  // Cuadro-specific resolver: uses user's picks to propagate through the tree
-  function cuadroResolve(label){try{
-    if(typeof label==='object'&&label.n)return label;
-    if(typeof label==='string'&&label.startsWith('Gan.')){
-      const srcId=label.replace('Gan.','');
-      const winner=myPicks[srcId];
-      console.log("cuadroResolve Gan srcId:",srcId,"winner:",winner);
-      if(winner){const nw=normTeam(winner);const si=nw.indexOf(' ');return si>0?{f:nw.slice(0,si),n:nw.slice(si+1)}:{f:'',n:nw};}
-    }
-    if(typeof label==='string'&&label.startsWith('Perd.')){
-      const srcId=label.replace('Perd.','');
-      const winner=myPicks[srcId];
-      const src=findBracketMatch(srcId);
-      if(winner&&src){
-        const th=cuadroResolve(src.h);const ta=cuadroResolve(src.a);
-        if(th&&ta){const wNorm=normTeam(winner);return normTeam(th.f+' '+th.n)===wNorm?ta:th;}
-      }
-    }
-    return null;}catch(e){return null;}
-  }
-  function cuadroTeams(m){
-    return {h:cuadroResolve(m.h), a:cuadroResolve(m.a)};
-  }
-
-  // Left side = first half of each round, right side = second half
-  // R32: 16 matches -> left 8, right 8
-  const locked=isBracketLocked();
-  function pickVal(m,isH){
-    const teams=cuadroTeams(m);
-    if(typeof m[isH?'h':'a']==='object')return m[isH?'h':'a'].f+' '+m[isH?'h':'a'].n;
-    const t=isH?teams.h:teams.a;
-    return t?t.f+' '+t.n:null;
-  }
-  function cell(m,compact){
-    if(!m)return '<div style="height:'+(compact?34:40)+'px;"></div>';
-    const teams=cuadroTeams(m);
-    const hName=typeof m.h==='object'?m.h.n:(teams.h?teams.h.n:null);
-    const aName=typeof m.a==='object'?m.a.n:(teams.a?teams.a.n:null);
-    const hFlag=typeof m.h==='object'?m.h.f:(teams.h?teams.h.f:'❓');
-    const aFlag=typeof m.a==='object'?m.a.f:(teams.a?teams.a.f:'❓');
-    // User pick for this specific match (may have been set directly)
-    const directPick=myPicks[m.id];
-    const userPick=directPick||null;
-    // If pick exists but teams unknown via propagation, try to show pick team
-    const pickResolved=directPick?{f:normTeam(directPick).split(' ')[0],n:normTeam(directPick).split(' ').slice(1).join(' ')}:null;
-    const result=S.bracketResults[m.id];
-    const hSel=userPick&&hName&&userPick.includes(hName);
-    const aSel=userPick&&aName&&userPick.includes(aName);
-    const hRes=result&&hName&&result.includes(hName);
-    const aRes=result&&aName&&result.includes(aName);
-    const hVal=pickVal(m,true);
-    const aVal=pickVal(m,false);
-    // Match started?
-    const matchDt=m.dt?new Date(m.dt+'T'+(m.tm||'00:00')+':00-05:00'):null;
-    const started=matchDt&&new Date()>=matchDt;
-    const canPick=!S.isVisitor&&!result&&!started&&!locked;
-    function row(flag,name,sel,res,val,side){
-      const clickable=canPick&&val&&name;
-      return '<div data-pick-mid="'+m.id+'" data-pick-val="'+(val||'')+'" class="cuadro-pick-row" style="display:flex;align-items:center;gap:3px;padding:3px 4px;border-radius:4px;cursor:'+(clickable?'pointer':'default')+';background:'+(res?'rgba(34,197,94,0.2)':sel?'rgba(34,197,94,0.1)':'transparent')+';transition:background 0.15s;">'
-        +'<span style="font-size:11px;'+(clickable?'':'opacity:0.5')+'">'+(flag||'·')+'</span>'
-        +'<span style="font-size:8.5px;font-weight:'+(sel||res?'800':'500')+';color:'+(res?'var(--g)':sel?'#fff':'rgba(255,255,255,0.55)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">'+(name||'?').slice(0,10)+'</span>'
-        +(sel&&!res?'<span style="font-size:8px;color:var(--g);">✓</span>':'')
-        +'</div>';
-    }
-    return '<div class="brkt-cell" data-mid="'+m.id+'" style="background:var(--card);border:1.5px solid '+(result?'rgba(34,197,94,0.35)':userPick?'rgba(34,197,94,0.2)':'var(--border)')+';border-radius:6px;padding:1px;width:102px;">'
-      +row(hFlag,hName,hSel,hRes,hVal,'h')
-      +'<div style="height:1px;background:rgba(255,255,255,0.05);margin:0 2px;"></div>'
-      +row(aFlag,aName,aSel,aRes,aVal,'a')
-      +'</div>';
-  }
-
-  function column(matches,compact,title){
-    let h='<div style="display:flex;flex-direction:column;justify-content:space-around;gap:6px;min-height:100%;">';
-    if(title)h+='<div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:2px;">'+title+'</div>';
-    matches.forEach(m=>{h+=cell(m,compact);});
-    h+='</div>';
-    return h;
-  }
-
-  // Left side per official image: br074,br077,br073,br075,br083,br084,br081,br082
   const r3=BRACKET_ROUNDS.find(r=>r.id==='r3');
+  const fin=BRACKET_ROUNDS.find(r=>r.id==='r2').matches;
   const third=r3?r3.matches[0]:null;
-    const leftIds32=['br074','br077','br073','br075','br083','br084','br081','br082'];
+
+  function col(matches,title){
+    let h='<div style="display:flex;flex-direction:column;gap:5px;">';
+    if(title)h+='<div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:2px;">'+title+'</div>';
+    matches.forEach(m=>{h+=cell(m);});
+    return h+'</div>';
+  }
+
+  const leftIds32=['br074','br077','br073','br075','br083','br084','br081','br082'];
   const rightIds32=['br076','br078','br079','br080','br086','br088','br085','br087'];
   const leftR32=leftIds32.map(id=>r32.find(m=>m.id===id)).filter(Boolean);
   const rightR32=rightIds32.map(id=>r32.find(m=>m.id===id)).filter(Boolean);
-  // R16 left: bo089,bo090,bo093,bo094  right: bo091,bo092,bo095,bo096
-  const leftIds16=['bo089','bo090','bo093','bo094'];
-  const rightIds16=['bo091','bo092','bo095','bo096'];
-  const leftR16=leftIds16.map(id=>r16.find(m=>m.id===id)).filter(Boolean);
-  const rightR16=rightIds16.map(id=>r16.find(m=>m.id===id)).filter(Boolean);
-  // QF left: bq097,bq098  right: bq099,bq100
+  const leftR16=[r16.find(m=>m.id==='bo089'),r16.find(m=>m.id==='bo090'),r16.find(m=>m.id==='bo093'),r16.find(m=>m.id==='bo094')].filter(Boolean);
+  const rightR16=[r16.find(m=>m.id==='bo091'),r16.find(m=>m.id==='bo092'),r16.find(m=>m.id==='bo095'),r16.find(m=>m.id==='bo096')].filter(Boolean);
   const leftR8=[r8.find(m=>m.id==='bq097'),r8.find(m=>m.id==='bq098')].filter(Boolean);
   const rightR8=[r8.find(m=>m.id==='bq099'),r8.find(m=>m.id==='bq100')].filter(Boolean);
-  const leftR4=[r4[0]],rightR4=[r4[1]];
 
-  const html='<div style="font-size:11px;color:var(--muted);margin-bottom:10px;text-align:center;line-height:1.5;">Tu cuadro completo. Toca un partido para ir a tus picks. 🟢 = tu elección.</div>'
-    +'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:10px;">'
-    +'<div style="display:flex;gap:5px;align-items:stretch;min-width:680px;">'
-    +'<div style="flex:0 0 auto;">'+column(leftR32,true,'R32')+'</div>'
-    +'<div style="flex:0 0 auto;">'+column(leftR16,false,'8vos')+'</div>'
-    +'<div style="flex:0 0 auto;">'+column(leftR8,false,'4tos')+'</div>'
-    +'<div style="flex:0 0 auto;">'+column(leftR4,false,'Semi')+'</div>'
-    +'<div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 4px;gap:5px;">'
-      +'<div style="font-size:11px;font-weight:700;color:var(--g);text-align:center;text-transform:uppercase;letter-spacing:1px;">Final</div>'
-      +cell(fin[0],false)
-      +'<div style="font-size:11px;font-weight:700;color:#f59e0b;text-align:center;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">3er Puesto</div>'
-      +(r3&&r3.matches[0]?cell(r3.matches[0],false):'')
+  const html='<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">'
+    +'<div style="display:flex;gap:6px;align-items:flex-start;min-width:700px;">'
+    +col(leftR32,'R32')+col(leftR16,'8vos')+col(leftR8,'4tos')
+    +'<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:24px;">'
+      +'<div style="font-size:9px;font-weight:800;color:var(--g);text-transform:uppercase;letter-spacing:1px;">Semi</div>'
+      +cell(r4[0])
+      +'<div style="font-size:9px;font-weight:800;color:#facc15;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Final</div>'
+      +cell(fin[0])
+      +(third?'<div style="font-size:9px;font-weight:800;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">3er</div>'+cell(third):'')
+      +'<div style="font-size:9px;font-weight:800;color:var(--g);text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Semi</div>'
+      +cell(r4[1])
     +'</div>'
-    +'<div style="flex:0 0 auto;">'+column(rightR4,false,'Semi')+'</div>'
-    +'<div style="flex:0 0 auto;">'+column(rightR8,false,'4tos')+'</div>'
-    +'<div style="flex:0 0 auto;">'+column(rightR16,false,'8vos')+'</div>'
-    +'<div style="flex:0 0 auto;">'+column(rightR32,true,'R32')+'</div>'
+    +col(rightR8,'4tos')+col(rightR16,'8vos')+col(rightR32,'R32')
     +'</div></div>';
+
   el.innerHTML=html;
-  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--muted);text-align:center;">Error cargando el cuadro. Intenta de nuevo.</div>';console.error('Cuadro error:',e);}
+  }catch(e){
+    el.innerHTML='<div style="padding:20px;color:var(--muted);text-align:center;">Error: '+e.message+'</div>';
+    console.error('cuadro error:',e);
+  }
 }
+
 
 document.addEventListener('click',function(e){
   // Cuadro pick: click on team row

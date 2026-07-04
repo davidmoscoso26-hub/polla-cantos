@@ -528,11 +528,11 @@ body{font-family:'Outfit',sans-serif;background:var(--dark);color:var(--text);mi
     </div>
     <div id="bracket-lock-banner"></div>
     <div style="display:flex;gap:6px;margin:12px 0;">
-      <div id="brkt-tab-picks" onclick="switchBracketTab('picks')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🎯 Mis Picks</div>
-      <div id="brkt-tab-cuadro" onclick="switchBracketTab('cuadro')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🗺️ Cuadro</div>
+      <div id="brkt-tab-cuadro" onclick="switchBracketTab('cuadro')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--g);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🗺️ Cuadro</div>
+      <div id="brkt-tab-picks" onclick="switchBracketTab('picks')" style="flex:1;padding:9px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;text-align:center;cursor:pointer;">🎯 Mis Picks</div>
     </div>
-    <div id="bracket-player-selector" style="margin-bottom:10px;display:none;"></div>
     <div id="bracket-content"></div>
+    <div id="bracket-player-selector" style="margin-bottom:10px;"></div>
     <div id="bracket-cuadro" style="display:none;"></div>
     <div class="ptbl" style="margin-top:14px;">
       <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Puntos del bracket · acertar quién avanza</div>
@@ -1168,7 +1168,7 @@ function getBracketMatchTeams(m){
     if(typeof label==='object'&&label.n)return label;
     if(typeof label==='string'&&label.startsWith('Gan.')){
       const w=S.bracketResults[label.replace('Gan.','')];
-      if(w){const nw=normTeam(w);const si=nw.indexOf(' ');return si>0?{f:nw.slice(0,si),n:nw.slice(si+1)}:{f:'',n:nw};}
+      if(w){const f=w.split(' ')[0];const n=w.split(' ').slice(1).join(' ');return {n,f};}
     }
     if(typeof label==='string'&&label.startsWith('Perd.')){
       const srcId=label.replace('Perd.','');
@@ -1190,7 +1190,7 @@ function getBracketMatchTeams(m){
 }
 
 
-let bracketTab='picks';
+let bracketTab='cuadro';
 let bracketViewPlayer=null; // null = own picks
 
 function renderBracketPlayerSelector(){
@@ -1226,22 +1226,20 @@ window.switchBracketTab=function(tab){
   const pc=document.getElementById('bracket-content');
   const cc=document.getElementById('bracket-cuadro');
   const sel=document.getElementById('bracket-player-selector');
-  if(tab==='picks'){
-    btnP.style.background='rgba(34,197,94,0.15)';btnP.style.borderColor='rgba(34,197,94,0.3)';btnP.style.color='var(--g)';
-    btnC.style.background='var(--card)';btnC.style.borderColor='var(--border)';btnC.style.color='var(--muted)';
-    pc.style.display='block';cc.style.display='none';
-    if(sel)sel.style.display='flex';
-    if(!bracketViewPlayer)bracketViewPlayer=S.curUser;
-    renderBracketPlayerSelector();
-    renderBracketContent();
-  }else{
+  if(tab==='cuadro'){
     btnC.style.background='rgba(34,197,94,0.15)';btnC.style.borderColor='rgba(34,197,94,0.3)';btnC.style.color='var(--g)';
     btnP.style.background='var(--card)';btnP.style.borderColor='var(--border)';btnP.style.color='var(--muted)';
     pc.style.display='none';cc.style.display='block';
-    if(sel)sel.style.display='none';
+    if(sel)sel.style.display='flex';
     if(!bracketViewPlayer)bracketViewPlayer=S.curUser;
     renderBracketPlayerSelector();
     renderBracketCuadro();
+  }else{
+    btnP.style.background='rgba(34,197,94,0.15)';btnP.style.borderColor='rgba(34,197,94,0.3)';btnP.style.color='var(--g)';
+    btnC.style.background='var(--card)';btnC.style.borderColor='var(--border)';btnC.style.color='var(--muted)';
+    pc.style.display='block';cc.style.display='none';
+    if(sel)sel.style.display='none';
+    renderBracketContent();
   }
 };
 
@@ -1270,23 +1268,19 @@ function renderBracketContent(){
   const viewPid=bracketViewPlayer||S.curUser;
   const isOwnBracket=viewPid===S.curUser;
   const myPicks=S.bracketPicks[viewPid]||{};
-  // Debug
-  console.log('cuadro viewPid:',viewPid,'picks count:',Object.keys(myPicks).length,'sample:',Object.entries(myPicks).slice(0,3));
 
   // Resolve using user picks to propagate teams through the tree
   function pickResolve(label){
     if(typeof label==='object'&&label.n)return label;
     if(typeof label==='string'&&label.startsWith('Gan.')){
       const srcId=label.replace('Gan.','');
-      // User pick takes priority in picks view - real result used only for scoring
-      const w=myPicks[srcId]||S.bracketResults[srcId];
-      if(srcId==='br075')console.log('pickResolve br075: myPicks=',myPicks[srcId],'bracketResults=',S.bracketResults[srcId]);
-      if(w){const nw=normTeam(w);const si=nw.indexOf(' ');return si>0?{f:nw.slice(0,si),n:nw.slice(si+1)}:{f:'',n:nw};}
+      const w=S.bracketResults[srcId]||myPicks[srcId];
+      if(w){const p=normTeam(w).split(' ');return{f:p[0],n:p.slice(1).join(' ')};}
     }
     if(typeof label==='string'&&label.startsWith('Perd.')){
       const srcId=label.replace('Perd.','');
       // The loser = the team in srcId that was NOT the winner
-      const winner=myPicks[srcId]||S.bracketResults[srcId];
+      const winner=S.bracketResults[srcId]||myPicks[srcId];
       const src=findBracketMatch(srcId);
       if(winner&&src){
         const th=pickResolve(src.h);
@@ -1376,107 +1370,142 @@ window.saveBracketPick=async function(mid,team){
     await sbUpdate('bracket_picks','user_id=eq.'+S.curUser+'&match_id=eq.'+mid,{user_id:S.curUser,match_id:mid,team:normT});
     toast('✅ Pick guardado');
   }
-  if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();
+  if(bracketTab==='cuadro'){
+    // Preserve scroll position on cuadro
+    const wrap=document.querySelector('#bracket-cuadro [style*="overflow-x"]');
+    const scrollX=wrap?wrap.scrollLeft:0;
+    renderBracketCuadro();
+    requestAnimationFrame(()=>{
+      const w=document.querySelector('#bracket-cuadro [style*="overflow-x"]');
+      if(w)w.scrollLeft=scrollX;
+    });
+  }else renderBracketContent();
 };
 
 // Visual two-sided bracket
 function renderBracketCuadro(){
   const el=document.getElementById('bracket-cuadro');if(!el)return;
   try{
-  const viewPid=bracketViewPlayer||S.curUser;
-  const myPicks=S.bracketPicks[viewPid]||{};
-
-  // Simple resolver: just show the direct pick for each match, no propagation
-  function getPickTeam(mid){
-    const pick=myPicks[mid];
-    if(!pick||!pick.trim())return null;
-    const nw=normTeam(pick);
-    const si=nw.indexOf(' ');
-    if(si>0)return{f:nw.slice(0,si),n:nw.slice(si+1)};
-    return{f:'',n:nw};
-  }
-
-  // Get the two teams for a match (from BRACKET_ROUNDS data, not propagated)
-  function getMatchTeams(m){
-    if(typeof m.h==='object'&&m.h.n)return{h:m.h,a:m.a};
-    // For later rounds, teams are 'Gan.brXXX' strings - show generic
-    return{h:null,a:null};
-  }
-
-  function cell(m){
-    if(!m)return '<div style="height:38px;"></div>';
-    const pick=getPickTeam(m.id);
-    const result=S.bracketResults[m.id];
-    const teams=getMatchTeams(m);
-    const hTeam=teams.h;
-    const aTeam=teams.a;
-    // Determine pick correctness
-    const correct=pick&&result&&normTeam(result)===normTeam(pick.f+' '+pick.n);
-    const wrong=pick&&result&&!correct;
-    const borderC=result?(correct?'rgba(34,197,94,0.4)':'rgba(239,68,68,0.3)'):pick?'rgba(34,197,94,0.25)':'rgba(255,255,255,0.08)';
-    const bg=result?(correct?'rgba(34,197,94,0.06)':'rgba(239,68,68,0.04)'):pick?'rgba(34,197,94,0.03)':'var(--card)';
-
-    if(pick){
-      // Show the pick directly
-      return '<div style="background:'+bg+';border:1.5px solid '+borderC+';border-radius:6px;padding:4px 6px;width:102px;min-height:28px;display:flex;align-items:center;gap:4px;">'
-        +'<span style="font-size:13px;">'+pick.f+'</span>'
-        +'<span style="font-size:8.5px;font-weight:700;color:'+(correct?'var(--g)':wrong?'#f87171':'#fff')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">'+pick.n.slice(0,11)+'</span>'
-        +(correct?'<span style="font-size:8px;">✓</span>':wrong?'<span style="font-size:8px;">✗</span>':'')
-        +'</div>';
-    }else{
-      // No pick for this match
-      return '<div style="background:rgba(255,255,255,0.02);border:1.5px solid rgba(255,255,255,0.06);border-radius:6px;padding:4px 6px;width:102px;min-height:28px;display:flex;align-items:center;justify-content:center;">'
-        +'<span style="font-size:9px;color:rgba(255,255,255,0.2);">sin pick</span>'
-        +'</div>';
-    }
-  }
-
   const r32=BRACKET_ROUNDS.find(r=>r.id==='r32').matches;
   const r16=BRACKET_ROUNDS.find(r=>r.id==='r16').matches;
   const r8=BRACKET_ROUNDS.find(r=>r.id==='r8').matches;
   const r4=BRACKET_ROUNDS.find(r=>r.id==='r4').matches;
-  const r3=BRACKET_ROUNDS.find(r=>r.id==='r3');
   const fin=BRACKET_ROUNDS.find(r=>r.id==='r2').matches;
-  const third=r3?r3.matches[0]:null;
+  const viewPid=bracketViewPlayer||S.curUser;
+  const myPicks=S.bracketPicks[viewPid]||{};
 
-  function col(matches,title){
-    let h='<div style="display:flex;flex-direction:column;gap:5px;">';
-    if(title)h+='<div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:2px;">'+title+'</div>';
-    matches.forEach(m=>{h+=cell(m);});
-    return h+'</div>';
+  // Cuadro-specific resolver: uses user's picks to propagate through the tree
+  function cuadroResolve(label){try{
+    if(typeof label==='object'&&label.n)return label;
+    if(typeof label==='string'&&label.startsWith('Gan.')){
+      const srcId=label.replace('Gan.','');
+      const winner=S.bracketResults[srcId]||myPicks[srcId];
+      if(winner){const parts=normTeam(winner).split(' ');return{f:parts[0],n:parts.slice(1).join(' ')};}
+    }
+    if(typeof label==='string'&&label.startsWith('Perd.')){
+      const srcId=label.replace('Perd.','');
+      const winner=S.bracketResults[srcId]||myPicks[srcId];
+      const src=findBracketMatch(srcId);
+      if(winner&&src){
+        const th=cuadroResolve(src.h);const ta=cuadroResolve(src.a);
+        if(th&&ta){const wNorm=normTeam(winner);return normTeam(th.f+' '+th.n)===wNorm?ta:th;}
+      }
+    }
+    return null;}catch(e){return null;}
+  }
+  function cuadroTeams(m){
+    return {h:cuadroResolve(m.h), a:cuadroResolve(m.a)};
   }
 
-  const leftIds32=['br074','br077','br073','br075','br083','br084','br081','br082'];
+  // Left side = first half of each round, right side = second half
+  // R32: 16 matches -> left 8, right 8
+  const locked=isBracketLocked();
+  function pickVal(m,isH){
+    const teams=cuadroTeams(m);
+    if(typeof m[isH?'h':'a']==='object')return m[isH?'h':'a'].f+' '+m[isH?'h':'a'].n;
+    const t=isH?teams.h:teams.a;
+    return t?t.f+' '+t.n:null;
+  }
+  function cell(m,compact){
+    if(!m)return '<div style="height:'+(compact?34:40)+'px;"></div>';
+    const teams=cuadroTeams(m);
+    const hName=typeof m.h==='object'?m.h.n:(teams.h?teams.h.n:null);
+    const aName=typeof m.a==='object'?m.a.n:(teams.a?teams.a.n:null);
+    const hFlag=typeof m.h==='object'?m.h.f:(teams.h?teams.h.f:'❓');
+    const aFlag=typeof m.a==='object'?m.a.f:(teams.a?teams.a.f:'❓');
+    const userPick=(S.bracketPicks[S.curUser]||{})[m.id];
+    const result=S.bracketResults[m.id];
+    const hSel=userPick&&hName&&userPick.includes(hName);
+    const aSel=userPick&&aName&&userPick.includes(aName);
+    const hRes=result&&hName&&result.includes(hName);
+    const aRes=result&&aName&&result.includes(aName);
+    const hVal=pickVal(m,true);
+    const aVal=pickVal(m,false);
+    // Match started?
+    const matchDt=m.dt?new Date(m.dt+'T'+(m.tm||'00:00')+':00-05:00'):null;
+    const started=matchDt&&new Date()>=matchDt;
+    const canPick=!S.isVisitor&&!result&&!started&&!locked;
+    function row(flag,name,sel,res,val,side){
+      const clickable=canPick&&val&&name;
+      return '<div data-pick-mid="'+m.id+'" data-pick-val="'+(val||'')+'" class="cuadro-pick-row" style="display:flex;align-items:center;gap:3px;padding:3px 4px;border-radius:4px;cursor:'+(clickable?'pointer':'default')+';background:'+(res?'rgba(34,197,94,0.2)':sel?'rgba(34,197,94,0.1)':'transparent')+';transition:background 0.15s;">'
+        +'<span style="font-size:11px;'+(clickable?'':'opacity:0.5')+'">'+(flag||'·')+'</span>'
+        +'<span style="font-size:8.5px;font-weight:'+(sel||res?'800':'500')+';color:'+(res?'var(--g)':sel?'#fff':'rgba(255,255,255,0.55)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">'+(name||'?').slice(0,10)+'</span>'
+        +(sel&&!res?'<span style="font-size:8px;color:var(--g);">✓</span>':'')
+        +'</div>';
+    }
+    return '<div class="brkt-cell" data-mid="'+m.id+'" style="background:var(--card);border:1.5px solid '+(result?'rgba(34,197,94,0.35)':userPick?'rgba(34,197,94,0.2)':'var(--border)')+';border-radius:6px;padding:1px;width:102px;">'
+      +row(hFlag,hName,hSel,hRes,hVal,'h')
+      +'<div style="height:1px;background:rgba(255,255,255,0.05);margin:0 2px;"></div>'
+      +row(aFlag,aName,aSel,aRes,aVal,'a')
+      +'</div>';
+  }
+
+  function column(matches,compact,title){
+    let h='<div style="display:flex;flex-direction:column;justify-content:space-around;gap:6px;min-height:100%;">';
+    if(title)h+='<div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:2px;">'+title+'</div>';
+    matches.forEach(m=>{h+=cell(m,compact);});
+    h+='</div>';
+    return h;
+  }
+
+  // Left side per official image: br074,br077,br073,br075,br083,br084,br081,br082
+  const r3=BRACKET_ROUNDS.find(r=>r.id==='r3');
+  const third=r3?r3.matches[0]:null;
+    const leftIds32=['br074','br077','br073','br075','br083','br084','br081','br082'];
   const rightIds32=['br076','br078','br079','br080','br086','br088','br085','br087'];
   const leftR32=leftIds32.map(id=>r32.find(m=>m.id===id)).filter(Boolean);
   const rightR32=rightIds32.map(id=>r32.find(m=>m.id===id)).filter(Boolean);
-  const leftR16=[r16.find(m=>m.id==='bo089'),r16.find(m=>m.id==='bo090'),r16.find(m=>m.id==='bo093'),r16.find(m=>m.id==='bo094')].filter(Boolean);
-  const rightR16=[r16.find(m=>m.id==='bo091'),r16.find(m=>m.id==='bo092'),r16.find(m=>m.id==='bo095'),r16.find(m=>m.id==='bo096')].filter(Boolean);
+  // R16 left: bo089,bo090,bo093,bo094  right: bo091,bo092,bo095,bo096
+  const leftIds16=['bo089','bo090','bo093','bo094'];
+  const rightIds16=['bo091','bo092','bo095','bo096'];
+  const leftR16=leftIds16.map(id=>r16.find(m=>m.id===id)).filter(Boolean);
+  const rightR16=rightIds16.map(id=>r16.find(m=>m.id===id)).filter(Boolean);
+  // QF left: bq097,bq098  right: bq099,bq100
   const leftR8=[r8.find(m=>m.id==='bq097'),r8.find(m=>m.id==='bq098')].filter(Boolean);
   const rightR8=[r8.find(m=>m.id==='bq099'),r8.find(m=>m.id==='bq100')].filter(Boolean);
+  const leftR4=[r4[0]],rightR4=[r4[1]];
 
-  const html='<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">'
-    +'<div style="display:flex;gap:6px;align-items:flex-start;min-width:700px;">'
-    +col(leftR32,'R32')+col(leftR16,'8vos')+col(leftR8,'4tos')
-    +'<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:24px;">'
-      +'<div style="font-size:9px;font-weight:800;color:var(--g);text-transform:uppercase;letter-spacing:1px;">Semi</div>'
-      +cell(r4[0])
-      +'<div style="font-size:9px;font-weight:800;color:#facc15;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Final</div>'
-      +cell(fin[0])
-      +(third?'<div style="font-size:9px;font-weight:800;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">3er</div>'+cell(third):'')
-      +'<div style="font-size:9px;font-weight:800;color:var(--g);text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Semi</div>'
-      +cell(r4[1])
+  const html='<div style="font-size:11px;color:var(--muted);margin-bottom:10px;text-align:center;line-height:1.5;">Tu cuadro completo. Toca un partido para ir a tus picks. 🟢 = tu elección.</div>'
+    +'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:10px;">'
+    +'<div style="display:flex;gap:5px;align-items:stretch;min-width:680px;">'
+    +'<div style="flex:0 0 auto;">'+column(leftR32,true,'R32')+'</div>'
+    +'<div style="flex:0 0 auto;">'+column(leftR16,false,'8vos')+'</div>'
+    +'<div style="flex:0 0 auto;">'+column(leftR8,false,'4tos')+'</div>'
+    +'<div style="flex:0 0 auto;">'+column(leftR4,false,'Semi')+'</div>'
+    +'<div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 4px;gap:5px;">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--g);text-align:center;text-transform:uppercase;letter-spacing:1px;">Final</div>'
+      +cell(fin[0],false)
+      +'<div style="font-size:11px;font-weight:700;color:#f59e0b;text-align:center;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">3er Puesto</div>'
+      +(r3&&r3.matches[0]?cell(r3.matches[0],false):'')
     +'</div>'
-    +col(rightR8,'4tos')+col(rightR16,'8vos')+col(rightR32,'R32')
+    +'<div style="flex:0 0 auto;">'+column(rightR4,false,'Semi')+'</div>'
+    +'<div style="flex:0 0 auto;">'+column(rightR8,false,'4tos')+'</div>'
+    +'<div style="flex:0 0 auto;">'+column(rightR16,false,'8vos')+'</div>'
+    +'<div style="flex:0 0 auto;">'+column(rightR32,true,'R32')+'</div>'
     +'</div></div>';
-
   el.innerHTML=html;
-  }catch(e){
-    el.innerHTML='<div style="padding:20px;color:var(--muted);text-align:center;">Error: '+e.message+'</div>';
-    console.error('cuadro error:',e);
-  }
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--muted);text-align:center;">Error cargando el cuadro. Intenta de nuevo.</div>';console.error('Cuadro error:',e);}
 }
-
 
 document.addEventListener('click',function(e){
   // Cuadro pick: click on team row
@@ -1501,7 +1530,7 @@ window.nav=function(id){
   if(id==='partidos'){buildFilterTabs();renderMatches();}
   if(id==='picks'&&!S.rendered.picks){renderGroups();renderGol();renderEcuPick();S.rendered.picks=true;}
   if(id==='mundial'&&!S.rendered.mundial){renderMundial();renderCarrera();S.rendered.mundial=true;}
-  if(id==='bracket'){if(!bracketViewPlayer)bracketViewPlayer=S.curUser;setTimeout(()=>{const sel=document.getElementById('bracket-player-selector');if(sel)sel.style.display='flex';renderBracketPlayerSelector();if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();showBracketReminder();},50);}
+  if(id==='bracket'){if(!bracketViewPlayer)bracketViewPlayer=S.curUser;const sel=document.getElementById('bracket-player-selector');if(sel)sel.style.display='flex';renderBracketPlayerSelector();if(bracketTab==='cuadro')renderBracketCuadro();else renderBracketContent();showBracketReminder();}
 
 window.switchMundialTab=function(tab){
   ['mundial','stats','playoff'].forEach(t=>{
@@ -1784,10 +1813,8 @@ window.showPlayerModal=function(pid){
   const ecuPhase=ecu?ECU_PHASES.find(p=>p.id===ecu):null;
   // Champion pick from bracket
   const champPick=(S.bracketPicks[pid]||{})['bf104'];
-  const champNorm=champPick?normTeam(champPick):null;
-  const champSpaceIdx=champNorm?champNorm.indexOf(' '):-1;
-  const champFlag=champNorm&&champSpaceIdx>0?champNorm.slice(0,champSpaceIdx):null;
-  const champName=champNorm&&champSpaceIdx>0?champNorm.slice(champSpaceIdx+1):champNorm;
+  const champName=champPick?normTeam(champPick).split(' ').slice(1).join(' '):null;
+  const champFlag=champPick?normTeam(champPick).split(' ')[0]:null;
   document.getElementById('modal-content').innerHTML=`
     <div style="text-align:center;margin-bottom:14px;">${avCircle(p,72,'av-ring-default','')}</div>
     <div style="text-align:center;font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;margin-bottom:14px;">${p.name}</div>
@@ -3165,113 +3192,6 @@ function renderPlayoffBracket(){
   }catch(e){
     el.innerHTML='<div style="padding:20px;color:var(--muted);text-align:center;">Cuadro disponible cuando empiecen los eliminatorios.</div>';
   }
-}
-
-function renderBracketCuadro(){
-  const el=document.getElementById('bracket-cuadro');if(!el)return;
-  const viewPid=bracketViewPlayer||S.curUser;
-  const picks=S.bracketPicks[viewPid]||{};
-
-  // Get team info for a match ID from picks
-  function pickTeam(mid){
-    const p=picks[mid];if(!p||!p.trim())return null;
-    const n=normTeam(p);const si=n.indexOf(' ');
-    return si>0?{f:n.slice(0,si),n:n.slice(si+1)}:{f:'',n:n};
-  }
-
-  // Get actual teams for R32 from BRACKET_ROUNDS data
-  function r32Teams(mid){
-    const r32=BRACKET_ROUNDS.find(r=>r.id==='r32');
-    const m=r32&&r32.matches.find(x=>x.id===mid);
-    if(!m)return{h:null,a:null};
-    return{
-      h:typeof m.h==='object'?m.h:null,
-      a:typeof m.a==='object'?m.a:null
-    };
-  }
-
-  function cell(mid,showTeams){
-    const pick=pickTeam(mid);
-    const result=S.bracketResults[mid];
-    const correct=pick&&result&&normTeam(result)===normTeam(pick.f+' '+pick.n);
-    const wrong=pick&&result&&!correct;
-    const border=result?(correct?'rgba(34,197,94,0.4)':'rgba(239,68,68,0.3)'):pick?'rgba(34,197,94,0.25)':'rgba(255,255,255,0.07)';
-    const bg=result?(correct?'rgba(34,197,94,0.07)':'rgba(239,68,68,0.04)'):pick?'rgba(34,197,94,0.03)':'rgba(255,255,255,0.02)';
-
-    let inner='';
-    if(pick){
-      inner='<span style="font-size:13px;">'+pick.f+'</span>'
-        +'<span style="font-size:8.5px;font-weight:700;color:'+(correct?'var(--g)':wrong?'#f87171':'#fff')+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+pick.n.slice(0,11)+'</span>'
-        +(correct?'<span style="font-size:8px;color:var(--g);">✓</span>':wrong?'<span style="font-size:8px;color:#f87171;">✗</span>':'');
-    }else{
-      inner='<span style="font-size:8px;color:rgba(255,255,255,0.2);width:100%;text-align:center;">—</span>';
-    }
-
-    // For R32: show both teams small, highlight picked one
-    if(showTeams){
-      const t=r32Teams(mid);
-      const hPicked=pick&&t.h&&normTeam(pick.f+' '+pick.n)===normTeam(t.h.f+' '+t.h.n);
-      const aPicked=pick&&t.a&&normTeam(pick.f+' '+pick.n)===normTeam(t.a.f+' '+t.a.n);
-      return '<div style="background:'+bg+';border:1.5px solid '+border+';border-radius:6px;padding:1px;width:106px;">'
-        +'<div style="display:flex;align-items:center;gap:3px;padding:2px 4px;background:'+(hPicked?'rgba(34,197,94,0.1)':'transparent')+';border-radius:4px;">'
-          +'<span style="font-size:10px;">'+(t.h?t.h.f:'❓')+'</span>'
-          +'<span style="font-size:8px;font-weight:'+(hPicked?700:400)+';color:'+(hPicked?'#fff':'rgba(255,255,255,0.4)')+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(t.h?t.h.n.slice(0,10):'?')+'</span>'
-          +(hPicked?'<span style="font-size:7px;color:var(--g);">✓</span>':'')
-        +'</div>'
-        +'<div style="height:1px;background:rgba(255,255,255,0.05);"></div>'
-        +'<div style="display:flex;align-items:center;gap:3px;padding:2px 4px;background:'+(aPicked?'rgba(34,197,94,0.1)':'transparent')+';border-radius:4px;">'
-          +'<span style="font-size:10px;">'+(t.a?t.a.f:'❓')+'</span>'
-          +'<span style="font-size:8px;font-weight:'+(aPicked?700:400)+';color:'+(aPicked?'#fff':'rgba(255,255,255,0.4)')+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(t.a?t.a.n.slice(0,10):'?')+'</span>'
-          +(aPicked?'<span style="font-size:7px;color:var(--g);">✓</span>':'')
-        +'</div>'
-      +'</div>';
-    }
-
-    return '<div style="background:'+bg+';border:1.5px solid '+border+';border-radius:6px;padding:4px 6px;width:106px;min-height:28px;display:flex;align-items:center;gap:4px;">'+inner+'</div>';
-  }
-
-  const r32=BRACKET_ROUNDS.find(r=>r.id==='r32').matches;
-  const r16=BRACKET_ROUNDS.find(r=>r.id==='r16').matches;
-  const r8=BRACKET_ROUNDS.find(r=>r.id==='r8').matches;
-  const r4=BRACKET_ROUNDS.find(r=>r.id==='r4').matches;
-  const fin=BRACKET_ROUNDS.find(r=>r.id==='r2').matches[0];
-  const r3m=BRACKET_ROUNDS.find(r=>r.id==='r3');
-  const third=r3m?r3m.matches[0]:null;
-
-  function col(mids,title,showTeams){
-    let h='<div style="display:flex;flex-direction:column;gap:5px;">';
-    if(title)h+='<div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:2px;">'+title+'</div>';
-    mids.forEach(id=>{h+=cell(id,showTeams);});
-    return h+'</div>';
-  }
-
-  const leftIds32=['br074','br077','br073','br075','br083','br084','br081','br082'];
-  const rightIds32=['br076','br078','br079','br080','br086','br088','br085','br087'];
-  const leftR16=['bo089','bo090','bo093','bo094'];
-  const rightR16=['bo091','bo092','bo095','bo096'];
-  const leftR8=['bq097','bq098'];
-  const rightR8=['bq099','bq100'];
-
-  const html='<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">'
-    +'<div style="display:flex;gap:5px;align-items:flex-start;min-width:720px;">'
-    +col(leftIds32,'R32',true)
-    +col(leftR16,'8vos',false)
-    +col(leftR8,'4tos',false)
-    +'<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:20px;">'
-      +'<div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;">Semi</div>'
-      +cell(r4[0].id,false)
-      +'<div style="font-size:8px;font-weight:800;color:#facc15;text-transform:uppercase;letter-spacing:1px;">Final 🏆</div>'
-      +cell(fin.id,false)
-      +(third?'<div style="font-size:8px;font-weight:800;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;">3er</div>'+cell(third.id,false):'')
-      +'<div style="font-size:8px;font-weight:800;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;">Semi</div>'
-      +cell(r4[1].id,false)
-    +'</div>'
-    +col(rightR8,'4tos',false)
-    +col(rightR16,'8vos',false)
-    +col(rightIds32,'R32',true)
-    +'</div></div>';
-
-  el.innerHTML=html;
 }
 
 async function boot(){

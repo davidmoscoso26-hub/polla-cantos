@@ -696,12 +696,16 @@ const isPicksLocked=()=>new Date()>=LOCK_DT;
 async function sb(table,opts={}){
   try{
     const xh=opts.headers||{};
+    const method=opts.method||'GET';
+    // For GET requests, explicitly request a wide range so PostgREST's default
+    // 1000-row cap never silently truncates large tables (predictions, bracket_picks, etc.)
+    const rangeHeader=method==='GET'&&!xh['Range']?{'Range-Unit':'items','Range':'0-19999'}:{};
     const r=await fetch(`${SB_URL}/rest/v1/${table}`,{
-      method:opts.method||'GET',
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json',...xh},
+      method,
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json',...rangeHeader,...xh},
       ...(opts.body?{body:opts.body}:{})
     });
-    if(!r.ok){const e=await r.text();console.log('SB error',r.status,e);return null;}
+    if(!r.ok&&r.status!==206){const e=await r.text();console.log('SB error',r.status,e);return null;}
     const t=await r.text();return t?JSON.parse(t):[];
   }catch(e){console.log('SB err',e);return null;}
 }

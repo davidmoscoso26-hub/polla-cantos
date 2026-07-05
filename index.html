@@ -709,7 +709,23 @@ async function sb(table,opts={}){
     const t=await r.text();return t?JSON.parse(t):[];
   }catch(e){console.log('SB err',e);return null;}
 }
-async function sbGet(q){return sb(q);}
+async function sbGet(q){
+  // Paginate in chunks so we ALWAYS get every row, no matter what max-rows
+  // limit is configured on the Supabase project (default is often 1000).
+  let all=[];
+  let offset=0;
+  const chunk=1000;
+  while(true){
+    const sep=q.includes('?')?'&':'?';
+    const page=await sb(`${q}${sep}limit=${chunk}&offset=${offset}`,{headers:{'Range':`${offset}-${offset+chunk-1}`}});
+    if(!page||!Array.isArray(page)||page.length===0)break;
+    all=all.concat(page);
+    if(page.length<chunk)break;
+    offset+=chunk;
+    if(offset>50000)break; // safety cap
+  }
+  return all;
+}
 async function sbUpsert(table,data){return sb(table,{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify(data)});}
 async function sbUpdate(table,filter,data){
   const upd=await sb(table+'?'+filter,{method:'PATCH',headers:{'Prefer':'return=representation'},body:JSON.stringify(data)});

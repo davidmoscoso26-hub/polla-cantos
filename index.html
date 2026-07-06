@@ -1339,9 +1339,16 @@ function renderBracketContent(){
       const canPick=isOwnBracket&&!S.isVisitor&&!isDone&&teamsKnown&&!matchStarted&&!locked;
       const hWin=userPick&&hName&&normTeam(userPick).includes(hName);
       const aWin=userPick&&aName&&normTeam(userPick).includes(aName);
+      // A saved pick only counts if it actually matches one of the two real teams in
+      // this match. Picks saved before the real knockout matchup was known (e.g. a
+      // pick propagated from a previous round that didn't end up advancing) point to
+      // a team that belongs to neither side here — treat those as "no pick" rather
+      // than silently displaying them as if they were a valid choice for this match.
+      const pickValid=!!(userPick&&teamsKnown&&(hWin||aWin));
+      const effectivePick=pickValid?userPick:null;
       const hResWin=result&&hName&&normTeam(result).includes(hName);
       const aResWin=result&&aName&&normTeam(result).includes(aName);
-      const correct=userPick&&result&&normTeam(userPick)===normTeam(result);
+      const correct=effectivePick&&result&&normTeam(effectivePick)===normTeam(result);
       const hDisp=hName?(th.f+' '+hName):'<span style="color:rgba(255,255,255,0.2);font-size:10px;">Por definir</span>';
       const aDisp=aName?(ta.f+' '+aName):'<span style="color:rgba(255,255,255,0.2);font-size:10px;">Por definir</span>';
 
@@ -1352,19 +1359,21 @@ function renderBracketContent(){
       </div>`;
 
       if(isDone){
-        inner+=`<div style="font-size:10px;text-align:center;color:${correct?'var(--g)':'#f87171'};font-weight:700;margin-top:6px;">Ganó: ${result}${userPick?(correct?' · +'+round.pts+' pts ✓':' · tu pick: '+teamShort(userPick)+' ✗'):' · sin pick'}</div>`;
+        inner+=`<div style="font-size:10px;text-align:center;color:${correct?'var(--g)':'#f87171'};font-weight:700;margin-top:6px;">Ganó: ${result}${effectivePick?(correct?' · +'+round.pts+' pts ✓':' · tu pick: '+teamShort(effectivePick)+' ✗'):' · sin pick'}</div>`;
       }else if(teamsKnown&&canPick){
         inner+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px;">
           <button onclick="saveBracketPick('${m.id}','${(hVal||'').replace(/'/g,"\\'")}');" style="padding:7px;border-radius:7px;border:1.5px solid ${hWin?'var(--g)':'rgba(255,255,255,0.1)'};background:${hWin?'rgba(34,197,94,0.12)':'rgba(255,255,255,0.03)'};color:${hWin?'var(--g)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">${hName}</button>
           <button onclick="saveBracketPick('${m.id}','${(aVal||'').replace(/'/g,"\\'")}');" style="padding:7px;border-radius:7px;border:1.5px solid ${aWin?'var(--g)':'rgba(255,255,255,0.1)'};background:${aWin?'rgba(34,197,94,0.12)':'rgba(255,255,255,0.03)'};color:${aWin?'var(--g)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;">${aName}</button>
         </div>`;
-      }else if(teamsKnown&&userPick&&!isDone){
+      }else if(teamsKnown&&effectivePick&&!isDone){
         inner+=`<div style="font-size:10px;text-align:center;color:var(--g);margin-top:5px;">Tu pick: <b>${hWin?hName:aName}</b> ✓</div>`;
-      }else if(locked&&matchStarted&&!userPick&&teamsKnown){
+      }else if(teamsKnown&&userPick&&!effectivePick&&!isDone){
+        inner+=`<div style="font-size:10px;text-align:center;color:rgba(255,255,255,0.25);margin-top:5px;">⚠️ Sin pick para este cruce</div>`;
+      }else if(locked&&matchStarted&&!effectivePick&&teamsKnown){
         inner+=`<div style="font-size:10px;text-align:center;color:rgba(255,255,255,0.25);margin-top:5px;">🔒 Sin pick</div>`;
       }
 
-      const borderC=isDone?(correct?'rgba(34,197,94,0.35)':'rgba(239,68,68,0.2)'):userPick?'rgba(34,197,94,0.15)':'var(--border)';
+      const borderC=isDone?(correct?'rgba(34,197,94,0.35)':'rgba(239,68,68,0.2)'):effectivePick?'rgba(34,197,94,0.15)':'var(--border)';
       html+=`<div style="background:var(--card);border:1px solid ${borderC};border-radius:10px;padding:10px 12px;margin-bottom:5px;">${inner}</div>`;
     });
     html+='</div>';

@@ -2099,6 +2099,21 @@ function buildMatchCard(m,showInputs){
   </div>`;
 }
 
+function getResolvedRoundMatches(roundId,grLabel){
+  const round=BRACKET_ROUNDS.find(r=>r.id===roundId);
+  if(!round)return [];
+  return round.matches.map(m=>{
+    const teams=getBracketMatchTeams(m);
+    return {
+      id:m.id,
+      h:teams.h||{n:'TBD',f:'❓'},
+      a:teams.a||{n:'TBD',f:'❓'},
+      dt:m.dt||'TBD',tm:m.tm||'',gr:grLabel,
+      isBracket:true
+    };
+  });
+}
+
 function renderMatches(){
   buildFilterTabs();
   const q=(document.getElementById('search-input')?.value||'').toLowerCase().trim();
@@ -2114,20 +2129,14 @@ function renderMatches(){
     if(S.filterGrp==='R32'){
       list=BRACKET_MATCHES;
     }else{
-      const round=BRACKET_ROUNDS.find(r=>r.id===roundId);
-      list=round?round.matches.map(m=>{
-        const teams=getBracketMatchTeams(m);
-        return {
-          id:m.id,
-          h:teams.h||{n:'TBD',f:'❓'},
-          a:teams.a||{n:'TBD',f:'❓'},
-          dt:m.dt||'TBD',tm:m.tm||'',gr:S.filterGrp,
-          isBracket:true
-        };
-      }):[];
+      list=getResolvedRoundMatches(roundId,S.filterGrp);
     }
   }else if(S.filterGrp==='all'){
-    list=[...MATCHES,...BRACKET_MATCHES];
+    list=[...MATCHES,...BRACKET_MATCHES,
+      ...getResolvedRoundMatches('r8','4TOS'),
+      ...getResolvedRoundMatches('r4','SEMI'),
+      ...getResolvedRoundMatches('r3','3RO'),
+      ...getResolvedRoundMatches('r2','FINAL')];
   }else{
     list=MATCHES.filter(m=>m.gr===S.filterGrp);
   }

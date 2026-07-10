@@ -2773,7 +2773,11 @@ window.unlockAdmin=function(){
 
 function renderAdminMatches(){
   const q=(document.getElementById('admin-search')?.value||'').toLowerCase().trim();
-  let list=[...MATCHES,...BRACKET_MATCHES];
+  let list=[...MATCHES,...BRACKET_MATCHES,
+    ...getResolvedRoundMatches('r8','4TOS'),
+    ...getResolvedRoundMatches('r4','SEMI'),
+    ...getResolvedRoundMatches('r3','3RO'),
+    ...getResolvedRoundMatches('r2','FINAL')];
   if(q)list=list.filter(m=>m.h.n.toLowerCase().includes(q)||m.a.n.toLowerCase().includes(q)||m.gr.toLowerCase().includes(q));
   // Sort: live first, then pending by date, then done at bottom
   list=[...list].sort((a,b)=>{
@@ -2809,7 +2813,11 @@ function renderAdminMatches(){
 window.selMatch=function(mid){S.selMatch=mid;renderAdminMatches();};
 
 function renderResForm(){
-  const m=[...MATCHES,...BRACKET_MATCHES].find(x=>x.id===S.selMatch);
+  const m=[...MATCHES,...BRACKET_MATCHES,
+    ...getResolvedRoundMatches('r8','4TOS'),
+    ...getResolvedRoundMatches('r4','SEMI'),
+    ...getResolvedRoundMatches('r3','3RO'),
+    ...getResolvedRoundMatches('r2','FINAL')].find(x=>x.id===S.selMatch);
   if(!m){document.getElementById('res-form').innerHTML='<p style="font-size:12px;color:rgba(255,255,255,0.2);">Selecciona un partido</p>';return;}
   const res=S.results[m.id]||{};
   document.getElementById('res-form').innerHTML=`

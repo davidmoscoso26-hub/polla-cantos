@@ -1672,12 +1672,19 @@ function calcPts(pid){
   if(S.ecuWinner&&S.ecuPicks&&S.ecuPicks[pid]===S.ecuWinner)pts+=10;
   return{pts,exact,wins};
 }
+function getAllMatchesFlat(){
+  return [...MATCHES,...BRACKET_MATCHES,
+    ...getResolvedRoundMatches('r8','4TOS'),
+    ...getResolvedRoundMatches('r4','SEMI'),
+    ...getResolvedRoundMatches('r3','3RO'),
+    ...getResolvedRoundMatches('r2','FINAL')];
+}
 function getLast5(pid){
-  const pr=S.preds[pid]||{};const allM=[...MATCHES,...BRACKET_MATCHES].sort((a,b)=>new Date(a.dt+"T"+(a.tm||"00:00")+":00")-new Date(b.dt+"T"+(b.tm||"00:00")+":00"));const done=allM.filter(m=>S.results[m.id]?.done).slice(-5);
+  const pr=S.preds[pid]||{};const allM=getAllMatchesFlat().sort((a,b)=>new Date(a.dt+"T"+(a.tm||"00:00")+":00")-new Date(b.dt+"T"+(b.tm||"00:00")+":00"));const done=allM.filter(m=>S.results[m.id]?.done).slice(-5);
   return done.map(m=>{const res=S.results[m.id];const p=pr[m.id];if(!p)return'empty';if(p.h===res.h&&p.a===res.a)return'exact';const pw=p.h>p.a?'h':p.h<p.a?'a':'d';const rw=res.h>res.a?'h':res.h<res.a?'a':'d';return pw===rw?'win':'loss';});
 }
 function getStreak(pid){
-  const pr=S.preds[pid]||{};const done=[...MATCHES,...BRACKET_MATCHES].sort((a,b)=>new Date(a.dt+"T"+(a.tm||"00:00")+":00")-new Date(b.dt+"T"+(b.tm||"00:00")+":00")).filter(m=>S.results[m.id]?.done).reverse();let s=0;
+  const pr=S.preds[pid]||{};const done=getAllMatchesFlat().sort((a,b)=>new Date(a.dt+"T"+(a.tm||"00:00")+":00")-new Date(b.dt+"T"+(b.tm||"00:00")+":00")).filter(m=>S.results[m.id]?.done).reverse();let s=0;
   for(const m of done){const res=S.results[m.id];const p=pr[m.id];if(!p)break;const pw=p.h>p.a?'h':p.h<p.a?'a':'d';const rw=res.h>res.a?'h':res.h<res.a?'a':'d';if(p.h===res.h&&p.a===res.a||pw===rw)s++;else break;}return s;
 }
 

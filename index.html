@@ -1832,7 +1832,7 @@ window.showPlayerModal=function(pid){
   const p=PLAYERS.find(x=>x.id===pid);if(!p)return;
   const{pts,exact,wins}=calcPts(pid);
   const gol=S.golpicks[pid];
-  const allMatchesSorted=[...MATCHES,...BRACKET_MATCHES].sort((a,b)=>new Date(a.dt+"T"+(a.tm||"00:00")+":00")-new Date(b.dt+"T"+(b.tm||"00:00")+":00"));
+  const allMatchesSorted=getAllMatchesFlat().sort((a,b)=>new Date(a.dt+"T"+(a.tm||"00:00")+":00")-new Date(b.dt+"T"+(b.tm||"00:00")+":00"));
   const doneMids=allMatchesSorted.filter(m=>S.results[m.id]?.done).slice(-6).reverse();
   let predsHtml='';
   doneMids.forEach(m=>{
